@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SKU Finder - Fast Search</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-gray-100 min-h-screen p-4 flex items-center justify-center">
+
+  <div class="max-w-2xl w-full bg-white p-6 rounded-2xl shadow-lg border border-gray-200 space-y-6">
+    
+    <div class="text-center">
+      <h2 class="text-2xl font-bold text-gray-900">SKU Search Portal</h2>
+      <p class="text-sm text-gray-500 mt-1">Enter SKU to open link instantly</p>
+    </div>
+
+    <form onsubmit="handleUserSearch(event)" class="flex gap-2">
+      <div class="relative flex-grow">
+        <input type="text" id="user-search-input" placeholder="e.g. KJ1640 or 1640" required
+          class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-lg uppercase font-semibold">
+        <i data-lucide="search" class="w-5 h-5 text-gray-400 absolute left-3 top-4"></i>
+      </div>
+      <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-6 py-3 rounded-xl flex items-center gap-2 transition">
+        Find SKU
+      </button>
+    </form>
+
+    <div id="search-feedback" class="hidden rounded-xl p-4 text-center font-medium"></div>
+
+    <div id="multi-result-container" class="hidden border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+      <div class="bg-amber-50 border-b border-amber-200 p-3 text-amber-800 text-xs font-semibold flex items-center gap-2">
+        <i data-lucide="alert-circle" class="w-4 h-4"></i> Multiple SKUs found:
+      </div>
+      
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+          <thead class="bg-gray-50 border-b text-gray-600 uppercase text-xs">
+            <tr>
+              <th class="py-3 px-4">#</th>
+              <th class="py-3 px-4">SKU Code</th>
+              <th class="py-3 px-4 text-right">Action</th>
+            </tr>
+          </thead>
+          <tbody id="multi-result-body" class="divide-y divide-gray-100"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCCvVLVvphi5VLk30MMiOyvX_HuDG7HdHU",
+      authDomain: "sku-finder-756b7.firebaseapp.com",
+      databaseURL: "https://sku-finder-756b7-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "sku-finder-756b7",
+      storageBucket: "sku-finder-756b7.firebasestorage.app",
+      messagingSenderId: "533564999771",
+      appId: "1:533564999771:web:f9a22330ea6a139d40d77e"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const productsRef = ref(db, 'products');
+
+    let products = [];
+
+    // Pre-cache memory fetch for instant offline-like responsiveness
+    onValue(productsRef, (snapshot) => {
+      const data = snapshot.val();
+      products = data ? Object.keys(data).map(id => ({ id, ...data[id] })) : [];
+    });
+
+    window.handleUserSearch = function(e) {
+      e.preventDefault();
+      const query = document.getElementById('user-search-input').value.trim().toUpperCase();
+      const feedback = document.getElementById('search-feedback');
+      const multiContainer = document.getElementById('multi-result-container');
+      const multiBody = document.getElementById('multi-result-body');
+
+      feedback.classList.add('hidden');
+      multiContainer.classList.add('hidden');
+      multiBody.innerHTML = '';
+
+      if (!query) return;
+
+      // 1. Instant Exact Match Execution
+      const exactMatch = products.find(p => p.sku.toUpperCase() === query);
+
+      if (exactMatch) {
+        // Immediate URL open without artificial delay
+        window.location.href = exactMatch.link; 
+        return;
+      }
+
+      // 2. Multi / Partial Match Search
+      const matches = products
+        .filter(p => p.sku.toUpperCase().includes(query))
+        .sort((a, b) => a.sku.localeCompare(b.sku, undefined, { numeric: true }));
+
+      if (matches.length === 0) {
+        feedback.className = "block bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 text-center font-medium";
+        feedback.innerHTML = `Wrong input or SKU not found! Try again.`;
+      } else {
+        multiContainer.classList.remove('hidden');
+        matches.forEach((prod, index) => {
+          const row = document.createElement('tr');
+          row.className = "hover:bg-gray-50 transition";
+          row.innerHTML = `
+            <td class="py-3 px-4 font-mono text-gray-500">${index + 1}</td>
+            <td class="py-3 px-4 font-bold text-gray-900">${escapeHtml(prod.sku)}</td>
+            <td class="py-3 px-4 text-right">
+              <a href="${escapeHtml(prod.link)}" target="_blank" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-3 py-1.5 rounded-lg text-xs inline-flex items-center gap-1 transition">
+                Open Link <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+              </a>
+            </td>
+          `;
+          multiBody.appendChild(row);
+        });
+        lucide.createIcons();
+      }
+    };
+
+    function escapeHtml(str) {
+      return str.replace(/[&<>"']/g, match => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[match]));
+    }
+
+    document.addEventListener('DOMContentLoaded', () => lucide.createIcons());
+  </script>
+  <script>
+  // Disable right-click menu
+document.addEventListener('contextmenu', (e) => e.preventDefault());
+
+// Block common DevTools shortcuts
+document.addEventListener('keydown', (e) => {
+  if (
+    e.key === 'F12' ||
+    (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) ||
+    (e.ctrlKey && e.key === 'U')
+  ) {
+    e.preventDefault();
+  }
+});
+</script>
+</body>
+</html>

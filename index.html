@@ -274,6 +274,7 @@
 
     window.handleSearch = function(e) {
       e.preventDefault();
+
       const query = document.getElementById('sku-input').value.trim().toUpperCase();
       const errorMsg = document.getElementById('error-message');
       const multiResult = document.getElementById('multi-result');
@@ -330,7 +331,7 @@
 
       title.innerText = `SKU: ${sku}`;
 
-      // Reset
+      // Reset UI elements softly without clearing frame memory
       img.style.display = 'none';
       iframe.style.display = 'none';
       backupBar.style.display = 'none';
@@ -356,8 +357,6 @@
 
     window.closeImageTab = function() {
       document.getElementById('image-tab-container').style.display = 'none';
-      document.getElementById('product-image').src = '';
-      document.getElementById('product-iframe').src = 'about:blank';
       document.getElementById('iframe-backup-bar').style.display = 'none';
     };
 
@@ -372,38 +371,6 @@
     window.closeFullScreen = function() {
       document.getElementById('fullscreen-modal').style.display = 'none';
     };
-
-    // DevTools Protection
-    document.addEventListener('contextmenu', (e) => e.preventDefault());
-    document.addEventListener('keydown', (e) => {
-      if (
-        e.key === 'F12' ||
-        (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) ||
-        (e.ctrlKey && e.key === 'U')
-      ) {
-        e.preventDefault();
-      }
-    });
-
-    (function () {
-      function blockDevTools() {
-        const startTime = performance.now();
-        (function () { return false; })["constructor"]("debugger")();
-        const endTime = performance.now();
-
-        if (endTime - startTime > 100) {
-          document.body.innerHTML = `
-            <div style="height:100vh; display:flex; justify-content:center; align-items:center; background:#1e293b; color:#fff; font-family:sans-serif; text-align:center; padding:20px;">
-              <div>
-                <h1 style="font-size:2rem; font-weight:bold; color:#ef4444; margin-bottom:10px;">DevTools Detected</h1>
-                <p style="color:#94a3b8;">Access is restricted. Please close Developer Tools to resume.</p>
-              </div>
-            </div>
-          `;
-        }
-      }
-      setInterval(blockDevTools, 100);
-    })();
   </script>
 </body>
 </html>

@@ -274,6 +274,10 @@
 
     window.handleSearch = function(e) {
       e.preventDefault();
+
+      // Clear previous view immediately before loading new SKU
+      closeImageTab();
+
       const query = document.getElementById('sku-input').value.trim().toUpperCase();
       const errorMsg = document.getElementById('error-message');
       const multiResult = document.getElementById('multi-result');

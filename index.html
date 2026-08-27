@@ -15,11 +15,11 @@
       align-items: center; 
     }
 
-    /* ================= 1. TOP TAB (RESPONSIVE IMAGE CONTAINER) ================= */
+    /* ================= 1. TOP TAB (RESPONSIVE CONTAINER) ================= */
     #image-tab-container {
       display: none;
       width: 100%;
-      max-width: 600px;
+      max-width: 700px;
       background: #ffffff;
       border-radius: 12px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.1);
@@ -50,13 +50,13 @@
       font-size: 12px;
     }
 
-    /* Responsive Height for Mobile & Desktop */
     .image-wrapper {
       width: 100%;
       height: 68vh;
-      max-height: 520px;
-      min-height: 320px;
+      max-height: 550px;
+      min-height: 350px;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
       background: #f8fafc;
@@ -71,19 +71,37 @@
       cursor: zoom-in;
     }
 
-    /* Iframe Crop Adjustment for E-commerce Links */
+    /* Iframe Display for Web Pages */
     #product-iframe {
       width: 100%;
-      height: 120%;
+      height: 100%;
       border: none;
       display: none;
-      margin-top: -12%; /* Upar ki extra top bar ko chhupane ke liye */
+    }
+
+    /* Bottom Backup Banner if iframe is blocked by site */
+    #iframe-backup-bar {
+      display: none;
+      width: 100%;
+      background: #fff3cd;
+      border-top: 1px solid #ffeeba;
+      padding: 8px 12px;
+      text-align: center;
+      font-size: 12px;
+      color: #856404;
+    }
+
+    #iframe-backup-bar a {
+      color: #0d6efd;
+      font-weight: bold;
+      text-decoration: underline;
+      margin-left: 6px;
     }
 
     /* ================= 2. RESPONSIVE SEARCH PORTAL ================= */
     .search-card {
       width: 100%;
-      max-width: 600px;
+      max-width: 700px;
       background: #ffffff;
       padding: 16px;
       border-radius: 12px;
@@ -94,7 +112,6 @@
     .search-card h2 { font-size: 17px; color: #0f172a; margin-bottom: 2px; }
     .search-card p { font-size: 12px; color: #64748b; margin-bottom: 12px; }
 
-    /* Flex layout with gap fix for small screens */
     .search-box { 
       display: flex; 
       gap: 8px; 
@@ -103,7 +120,7 @@
     
     input[type="text"] {
       flex: 1;
-      min-width: 0; /* Mobile input overflow fix */
+      min-width: 0;
       padding: 12px;
       border: 1px solid #cbd5e1;
       border-radius: 8px;
@@ -192,16 +209,22 @@
       <img id="product-image" src="" alt="SKU Image" onclick="openFullScreen()">
       <iframe id="product-iframe" src=""></iframe>
     </div>
+
+    <!-- Smart Backup Notification Bar -->
+    <div id="iframe-backup-bar">
+      Page blank dikh raha hai?
+      <a id="backup-direct-link" href="#" target="_blank">Yahan click karke new tab me kholein ↗</a>
+    </div>
   </div>
 
   <!-- SEARCH PORTAL -->
   <div class="search-card">
     <h2>SKU Search Portal</h2>
-    <p>Enter SKU code below to display product image</p>
+    <p>Enter SKU code below to display product details</p>
 
     <form onsubmit="handleSearch(event)" class="search-box">
       <input type="text" id="sku-input" placeholder="e.g. KM14" required>
-      <button type="submit" class="search-btn">Find Image</button>
+      <button type="submit" class="search-btn">Find SKU</button>
     </form>
 
     <div id="error-message" class="error-msg"></div>
@@ -293,25 +316,38 @@
     };
 
     window.openImageInTab = function(url, sku) {
+      if (!url || url === 'undefined') {
+        alert("Is SKU ke paas koi link nahi hai!");
+        return;
+      }
+
       const container = document.getElementById('image-tab-container');
       const img = document.getElementById('product-image');
       const iframe = document.getElementById('product-iframe');
+      const backupBar = document.getElementById('iframe-backup-bar');
+      const backupLink = document.getElementById('backup-direct-link');
       const title = document.getElementById('tab-sku-title');
 
       title.innerText = `SKU: ${sku}`;
 
+      // Reset
+      img.style.display = 'none';
+      iframe.style.display = 'none';
+      backupBar.style.display = 'none';
+
       const isDirectImage = /\.(jpeg|jpg|gif|png|webp)($|\?)/i.test(url) || url.includes('firebasestorage') || url.includes('image');
 
       if (isDirectImage) {
-        iframe.style.display = 'none';
-        iframe.src = '';
         img.src = url;
         img.style.display = 'block';
       } else {
-        img.style.display = 'none';
-        img.src = '';
+        // ALWAYS TRY LOADING IN IFRAME FIRST
         iframe.src = url;
         iframe.style.display = 'block';
+
+        // Setup backup direct link in case site blocks framing
+        backupLink.href = url;
+        backupBar.style.display = 'block';
       }
 
       container.style.display = 'block';
@@ -321,7 +357,8 @@
     window.closeImageTab = function() {
       document.getElementById('image-tab-container').style.display = 'none';
       document.getElementById('product-image').src = '';
-      document.getElementById('product-iframe').src = '';
+      document.getElementById('product-iframe').src = 'about:blank';
+      document.getElementById('iframe-backup-bar').style.display = 'none';
     };
 
     window.openFullScreen = function() {
@@ -335,10 +372,9 @@
     window.closeFullScreen = function() {
       document.getElementById('fullscreen-modal').style.display = 'none';
     };
-     // Disable right-click menu
-    document.addEventListener('contextmenu', (e) => e.preventDefault());
 
-    // Block common DevTools shortcuts
+    // DevTools Protection
+    document.addEventListener('contextmenu', (e) => e.preventDefault());
     document.addEventListener('keydown', (e) => {
       if (
         e.key === 'F12' ||
@@ -348,35 +384,26 @@
         e.preventDefault();
       }
     });
-    // 3. DevTools Pause / Freeze Loop (Anti-Debugging)
-  (function () {
-    function blockDevTools() {
-      const startTime = performance.now();
-      
-      // Infinite Debugger Trigger
-      (function () {
-        return false;
-      })
-      ["constructor"]("debugger")();
 
-      const endTime = performance.now();
+    (function () {
+      function blockDevTools() {
+        const startTime = performance.now();
+        (function () { return false; })["constructor"]("debugger")();
+        const endTime = performance.now();
 
-      // Agar DevTools open hoga, toh performance time slow ho jayega
-      if (endTime - startTime > 100) {
-        document.body.innerHTML = `
-          <div style="height:100vh; display:flex; justify-content:center; align-items:center; background:#1e293b; color:#fff; font-family:sans-serif; text-align:center; padding:20px;">
-            <div>
-              <h1 style="font-size:2rem; font-weight:bold; color:#ef4444; margin-bottom:10px;">DevTools Detected</h1>
-              <p style="color:#94a3b8;">Access is restricted. Please close Developer Tools to resume.</p>
+        if (endTime - startTime > 100) {
+          document.body.innerHTML = `
+            <div style="height:100vh; display:flex; justify-content:center; align-items:center; background:#1e293b; color:#fff; font-family:sans-serif; text-align:center; padding:20px;">
+              <div>
+                <h1 style="font-size:2rem; font-weight:bold; color:#ef4444; margin-bottom:10px;">DevTools Detected</h1>
+                <p style="color:#94a3b8;">Access is restricted. Please close Developer Tools to resume.</p>
+              </div>
             </div>
-          </div>
-        `;
+          `;
+        }
       }
-    }
-
-    // Run interval continuously
-    setInterval(blockDevTools, 100);
-  })();
+      setInterval(blockDevTools, 100);
+    })();
   </script>
 </body>
-</html> 
+</html>

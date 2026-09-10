@@ -2,253 +2,54 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>SKU Image Finder</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { 
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-      background-color: #f3f4f6; 
-      padding: 12px; 
-      display: flex; 
-      flex-direction: column; 
-      align-items: center; 
-    }
-
-    /* ================= 1. TOP TAB (RESPONSIVE CONTAINER) ================= */
-    #image-tab-container {
-      display: none;
-      width: 100%;
-      max-width: 700px;
-      background: #ffffff;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      margin-bottom: 16px;
-      overflow: hidden;
-      border: 1px solid #e5e7eb;
-    }
-
-    .tab-header {
-      background: #1e293b;
-      color: #ffffff;
-      padding: 10px 14px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 14px;
-      font-weight: 600;
-    }
-
-    .close-btn {
-      background: #ef4444;
-      color: white;
-      border: none;
-      padding: 6px 12px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: bold;
-      font-size: 12px;
-    }
-
-    .image-wrapper {
-      width: 100%;
-      height: 68vh;
-      max-height: 550px;
-      min-height: 350px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      background: #f8fafc;
-      position: relative;
-      overflow: hidden;
-    }
-
-    #product-image {
-      max-width: 100%;
-      max-height: 100%;
-      object-fit: contain;
-      cursor: zoom-in;
-    }
-
-    /* Iframe Display for Web Pages */
-    #product-iframe {
-      width: 100%;
-      height: 100%;
-      border: none;
-      display: none;
-    }
-
-    /* Bottom Backup Banner if iframe is blocked by site */
-    #iframe-backup-bar {
-      display: none;
-      width: 100%;
-      background: #fff3cd;
-      border-top: 1px solid #ffeeba;
-      padding: 8px 12px;
-      text-align: center;
-      font-size: 12px;
-      color: #856404;
-    }
-
-    #iframe-backup-bar a {
-      color: #0d6efd;
-      font-weight: bold;
-      text-decoration: underline;
-      margin-left: 6px;
-    }
-
-    /* ================= 2. RESPONSIVE SEARCH PORTAL ================= */
-    .search-card {
-      width: 100%;
-      max-width: 700px;
-      background: #ffffff;
-      padding: 16px;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-      border: 1px solid #e5e7eb;
-    }
-
-    .search-card h2 { font-size: 17px; color: #0f172a; margin-bottom: 2px; }
-    .search-card p { font-size: 12px; color: #64748b; margin-bottom: 12px; }
-
-    .search-box { 
-      display: flex; 
-      gap: 8px; 
-      width: 100%;
-    }
-    
-    input[type="text"] {
-      flex: 1;
-      min-width: 0;
-      padding: 12px;
-      border: 1px solid #cbd5e1;
-      border-radius: 8px;
-      font-size: 15px;
-      text-transform: uppercase;
-      font-weight: 600;
-      outline: none;
-      background-color: #f8fafc;
-    }
-    input[type="text"]:focus { border-color: #4f46e5; background-color: #fff; }
-
-    button.search-btn {
-      padding: 12px 16px;
-      background: #4f46e5;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      font-weight: 600;
-      font-size: 14px;
-      cursor: pointer;
-      white-space: nowrap;
-    }
-
-    .error-msg {
-      display: none;
-      margin-top: 10px;
-      padding: 10px;
-      background: #fef2f2;
-      border: 1px solid #fecaca;
-      color: #dc2626;
-      border-radius: 8px;
-      font-size: 13px;
-      text-align: center;
-      font-weight: 600;
-    }
-
-    /* Multi Result Table */
-    #multi-result {
-      display: none;
-      margin-top: 12px;
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      overflow-x: auto;
-    }
-    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
-    th { background: #f1f5f9; padding: 8px 10px; color: #475569; }
-    td { padding: 8px 10px; border-top: 1px solid #e2e8f0; }
-    .view-btn {
-      background: #4f46e5;
-      color: white;
-      border: none;
-      padding: 6px 10px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 12px;
-    }
-
-    /* Fullscreen Lightbox Modal */
-    #fullscreen-modal {
-      display: none;
-      position: fixed;
-      top: 0; left: 0; width: 100vw; height: 100vh;
-      background: rgba(0,0,0,0.9);
-      z-index: 9999;
-      justify-content: center;
-      align-items: center;
-      padding: 10px;
-    }
-    #fullscreen-modal img {
-      max-width: 100%;
-      max-height: 100%;
-      object-fit: contain;
-    }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SKU Finder - Fast Search</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
 </head>
-<body>
+<body class="bg-gray-100 min-h-screen p-4 flex items-center justify-center">
 
-  <!-- TOP TAB DISPLAY -->
-  <div id="image-tab-container">
-    <div class="tab-header">
-      <span id="tab-sku-title">SKU: --</span>
-      <button class="close-btn" onclick="closeImageTab()">Close View</button>
-    </div>
+  <div class="max-w-2xl w-full bg-white p-6 rounded-2xl shadow-lg border border-gray-200 space-y-6">
     
-    <div class="image-wrapper">
-      <img id="product-image" src="" alt="SKU Image" onclick="openFullScreen()">
-      <iframe id="product-iframe" src=""></iframe>
+    <div class="text-center">
+      <h2 class="text-2xl font-bold text-gray-900">SKU Search Portal</h2>
+      <p class="text-sm text-gray-500 mt-1">Enter SKU to open link instantly</p>
     </div>
 
-    <!-- Smart Backup Notification Bar -->
-    <div id="iframe-backup-bar">
-      Page blank dikh raha hai?
-      <a id="backup-direct-link" href="#" target="_blank">Yahan click karke new tab me kholein ↗</a>
-    </div>
-  </div>
-
-  <!-- SEARCH PORTAL -->
-  <div class="search-card">
-    <h2>SKU Search Portal</h2>
-    <p>Enter SKU code below to display product details</p>
-
-    <form onsubmit="handleSearch(event)" class="search-box">
-      <input type="text" id="sku-input" placeholder="e.g. KM14" required>
-      <button type="submit" class="search-btn">Find SKU</button>
+    <form onsubmit="handleUserSearch(event)" class="flex gap-2">
+      <div class="relative flex-grow">
+        <input type="text" id="user-search-input" placeholder="e.g. KJ1640 or 1640" required
+          class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-lg uppercase font-semibold">
+        <i data-lucide="search" class="w-5 h-5 text-gray-400 absolute left-3 top-4"></i>
+      </div>
+      <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-6 py-3 rounded-xl flex items-center gap-2 transition">
+        Find SKU
+      </button>
     </form>
 
-    <div id="error-message" class="error-msg"></div>
+    <div id="search-feedback" class="hidden rounded-xl p-4 text-center font-medium"></div>
 
-    <div id="multi-result">
-      <table>
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>SKU</th>
-            <th style="text-align: right;">Action</th>
-          </tr>
-        </thead>
-        <tbody id="multi-result-body"></tbody>
-      </table>
+    <div id="multi-result-container" class="hidden border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+      <div class="bg-amber-50 border-b border-amber-200 p-3 text-amber-800 text-xs font-semibold flex items-center gap-2">
+        <i data-lucide="alert-circle" class="w-4 h-4"></i> Multiple SKUs found:
+      </div>
+      
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+          <thead class="bg-gray-50 border-b text-gray-600 uppercase text-xs">
+            <tr>
+              <th class="py-3 px-4">#</th>
+              <th class="py-3 px-4">SKU Code</th>
+              <th class="py-3 px-4 text-right">Action</th>
+            </tr>
+          </thead>
+          <tbody id="multi-result-body" class="divide-y divide-gray-100"></tbody>
+        </table>
+      </div>
     </div>
+
   </div>
 
-  <!-- FULLSCREEN MODAL -->
-  <div id="fullscreen-modal" onclick="closeFullScreen()">
-    <img id="full-image-src" src="">
-  </div>
-
-  <!-- FIREBASE INTEGRATION -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
@@ -265,112 +66,115 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
+    const productsRef = ref(db, 'products');
+
     let products = [];
 
-    onValue(ref(db, 'products'), (snapshot) => {
+    // Pre-cache memory fetch for instant offline-like responsiveness
+    onValue(productsRef, (snapshot) => {
       const data = snapshot.val();
       products = data ? Object.keys(data).map(id => ({ id, ...data[id] })) : [];
     });
 
-    window.handleSearch = function(e) {
+    window.handleUserSearch = function(e) {
       e.preventDefault();
-
-      const query = document.getElementById('sku-input').value.trim().toUpperCase();
-      const errorMsg = document.getElementById('error-message');
-      const multiResult = document.getElementById('multi-result');
+      const query = document.getElementById('user-search-input').value.trim().toUpperCase();
+      const feedback = document.getElementById('search-feedback');
+      const multiContainer = document.getElementById('multi-result-container');
       const multiBody = document.getElementById('multi-result-body');
 
-      errorMsg.style.display = 'none';
-      multiResult.style.display = 'none';
+      feedback.classList.add('hidden');
+      multiContainer.classList.add('hidden');
       multiBody.innerHTML = '';
 
       if (!query) return;
 
-      const exactMatch = products.find(p => p.sku && p.sku.toUpperCase() === query);
+      // 1. Instant Exact Match Execution
+      const exactMatch = products.find(p => p.sku.toUpperCase() === query);
 
       if (exactMatch) {
-        const url = exactMatch.imageUrl || exactMatch.image || exactMatch.link;
-        openImageInTab(url, exactMatch.sku);
+        // Immediate URL open without artificial delay
+        window.location.href = exactMatch.link; 
         return;
       }
 
-      const matches = products.filter(p => p.sku && p.sku.toUpperCase().includes(query));
+      // 2. Multi / Partial Match Search
+      const matches = products
+        .filter(p => p.sku.toUpperCase().includes(query))
+        .sort((a, b) => a.sku.localeCompare(b.sku, undefined, { numeric: true }));
 
       if (matches.length === 0) {
-        errorMsg.innerText = "SKU Not Found!";
-        errorMsg.style.display = 'block';
+        feedback.className = "block bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 text-center font-medium";
+        feedback.innerHTML = `Wrong input or SKU not found! Try again.`;
       } else {
-        multiResult.style.display = 'block';
+        multiContainer.classList.remove('hidden');
         matches.forEach((prod, index) => {
-          const targetUrl = prod.imageUrl || prod.image || prod.link;
           const row = document.createElement('tr');
+          row.className = "hover:bg-gray-50 transition";
           row.innerHTML = `
-            <td>${index + 1}</td>
-            <td><strong>${prod.sku}</strong></td>
-            <td style="text-align: right;">
-              <button class="view-btn" onclick="openImageInTab('${targetUrl}', '${prod.sku}')">Show</button>
+            <td class="py-3 px-4 font-mono text-gray-500">${index + 1}</td>
+            <td class="py-3 px-4 font-bold text-gray-900">${escapeHtml(prod.sku)}</td>
+            <td class="py-3 px-4 text-right">
+              <a href="${escapeHtml(prod.link)}" target="_blank" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-3 py-1.5 rounded-lg text-xs inline-flex items-center gap-1 transition">
+                Open Link <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+              </a>
             </td>
           `;
           multiBody.appendChild(row);
         });
+        lucide.createIcons();
       }
     };
 
-    window.openImageInTab = function(url, sku) {
-      if (!url || url === 'undefined') {
-        alert("Is SKU ke paas koi link nahi hai!");
-        return;
-      }
+    function escapeHtml(str) {
+      return str.replace(/[&<>"']/g, match => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[match]));
+    }
 
-      const container = document.getElementById('image-tab-container');
-      const img = document.getElementById('product-image');
-      const iframe = document.getElementById('product-iframe');
-      const backupBar = document.getElementById('iframe-backup-bar');
-      const backupLink = document.getElementById('backup-direct-link');
-      const title = document.getElementById('tab-sku-title');
-
-      title.innerText = `SKU: ${sku}`;
-
-      // Reset UI elements softly without clearing frame memory
-      img.style.display = 'none';
-      iframe.style.display = 'none';
-      backupBar.style.display = 'none';
-
-      const isDirectImage = /\.(jpeg|jpg|gif|png|webp)($|\?)/i.test(url) || url.includes('firebasestorage') || url.includes('image');
-
-      if (isDirectImage) {
-        img.src = url;
-        img.style.display = 'block';
-      } else {
-        // ALWAYS TRY LOADING IN IFRAME FIRST
-        iframe.src = url;
-        iframe.style.display = 'block';
-
-        // Setup backup direct link in case site blocks framing
-        backupLink.href = url;
-        backupBar.style.display = 'block';
-      }
-
-      container.style.display = 'block';
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    };
-
-    window.closeImageTab = function() {
-      document.getElementById('image-tab-container').style.display = 'none';
-      document.getElementById('iframe-backup-bar').style.display = 'none';
-    };
-
-    window.openFullScreen = function() {
-      const src = document.getElementById('product-image').src;
-      if (src) {
-        document.getElementById('full-image-src').src = src;
-        document.getElementById('fullscreen-modal').style.display = 'flex';
-      }
-    };
-
-    window.closeFullScreen = function() {
-      document.getElementById('fullscreen-modal').style.display = 'none';
-    };
+    document.addEventListener('DOMContentLoaded', () => lucide.createIcons());
   </script>
+  <script>
+  // Disable right-click menu
+document.addEventListener('contextmenu', (e) => e.preventDefault());
+
+// Block common DevTools shortcuts
+document.addEventListener('keydown', (e) => {
+  if (
+    e.key === 'F12' ||
+    (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) ||
+    (e.ctrlKey && e.key === 'U')
+  ) {
+    e.preventDefault();
+  }
+});
+    // 3. DevTools Pause / Freeze Loop (Anti-Debugging)
+  (function () {
+    function blockDevTools() {
+      const startTime = performance.now();
+      
+      // Infinite Debugger Trigger
+      (function () {
+        return false;
+      })
+      ["constructor"]("debugger")();
+
+      const endTime = performance.now();
+
+      // Agar DevTools open hoga, toh performance time slow ho jayega
+      if (endTime - startTime > 100) {
+        document.body.innerHTML = `
+          <div style="height:100vh; display:flex; justify-content:center; align-items:center; background:#1e293b; color:#fff; font-family:sans-serif; text-align:center; padding:20px;">
+            <div>
+              <h1 style="font-size:2rem; font-weight:bold; color:#ef4444; margin-bottom:10px;">DevTools Detected</h1>
+              <p style="color:#94a3b8;">Access is restricted. Please close Developer Tools to resume.</p>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    // Run interval continuously
+    setInterval(blockDevTools, 100);
+  })();
+</script>
 </body>
 </html>

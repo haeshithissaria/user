@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SKU Finder - Fast Search</title>
+  <title>Berrylicious - SKU Search Portal</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
 </head>
@@ -12,17 +12,19 @@
   <div class="max-w-2xl w-full bg-white p-6 rounded-2xl shadow-lg border border-gray-200 space-y-6">
     
     <div class="text-center">
-      <h2 class="text-2xl font-bold text-gray-900">SKU Search Portal</h2>
+      <h2 class="text-2xl font-bold text-gray-900 flex items-center justify-center gap-2">
+        <i data-lucide="sparkles" class="w-6 h-6 text-pink-600"></i> Berrylicious Search Portal
+      </h2>
       <p class="text-sm text-gray-500 mt-1">Enter SKU to open link instantly</p>
     </div>
 
     <form onsubmit="handleUserSearch(event)" class="flex gap-2">
       <div class="relative flex-grow">
-        <input type="text" id="user-search-input" placeholder="e.g. KJ1640 or 1640" required
-          class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-lg uppercase font-semibold">
+        <input type="text" id="user-search-input" placeholder="e.g. K1640J" required
+          class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 text-lg uppercase font-semibold">
         <i data-lucide="search" class="w-5 h-5 text-gray-400 absolute left-3 top-4"></i>
       </div>
-      <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-6 py-3 rounded-xl flex items-center gap-2 transition">
+      <button type="submit" class="bg-pink-600 hover:bg-pink-700 text-white font-medium px-6 py-3 rounded-xl flex items-center gap-2 transition">
         Find SKU
       </button>
     </form>
@@ -115,7 +117,7 @@
             <td class="py-3 px-4 font-mono text-gray-500">${index + 1}</td>
             <td class="py-3 px-4 font-bold text-gray-900">${escapeHtml(prod.sku)}</td>
             <td class="py-3 px-4 text-right">
-              <a href="${escapeHtml(prod.link)}" target="_blank" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-3 py-1.5 rounded-lg text-xs inline-flex items-center gap-1 transition">
+              <a href="${escapeHtml(prod.link)}" target="_blank" class="bg-pink-600 hover:bg-pink-700 text-white font-medium px-3 py-1.5 rounded-lg text-xs inline-flex items-center gap-1 transition">
                 Open Link <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
               </a>
             </td>
@@ -133,48 +135,46 @@
     document.addEventListener('DOMContentLoaded', () => lucide.createIcons());
   </script>
   <script>
-  // Disable right-click menu
-document.addEventListener('contextmenu', (e) => e.preventDefault());
+    // Disable right-click menu
+    document.addEventListener('contextmenu', (e) => e.preventDefault());
 
-// Block common DevTools shortcuts
-document.addEventListener('keydown', (e) => {
-  if (
-    e.key === 'F12' ||
-    (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) ||
-    (e.ctrlKey && e.key === 'U')
-  ) {
-    e.preventDefault();
-  }
-});
-    // 3. DevTools Pause / Freeze Loop (Anti-Debugging)
-  (function () {
-    function blockDevTools() {
-      const startTime = performance.now();
-      
-      // Infinite Debugger Trigger
-      (function () {
-        return false;
-      })
-      ["constructor"]("debugger")();
-
-      const endTime = performance.now();
-
-      // Agar DevTools open hoga, toh performance time slow ho jayega
-      if (endTime - startTime > 100) {
-        document.body.innerHTML = `
-          <div style="height:100vh; display:flex; justify-content:center; align-items:center; background:#1e293b; color:#fff; font-family:sans-serif; text-align:center; padding:20px;">
-            <div>
-              <h1 style="font-size:2rem; font-weight:bold; color:#ef4444; margin-bottom:10px;">DevTools Detected</h1>
-              <p style="color:#94a3b8;">Access is restricted. Please close Developer Tools to resume.</p>
-            </div>
-          </div>
-        `;
+    // Block common DevTools shortcuts
+    document.addEventListener('keydown', (e) => {
+      if (
+        e.key === 'F12' ||
+        (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) ||
+        (e.ctrlKey && e.key === 'U')
+      ) {
+        e.preventDefault();
       }
-    }
+    });
 
-    // Run interval continuously
-    setInterval(blockDevTools, 100);
-  })();
-</script>
+    // DevTools Pause / Freeze Loop (Anti-Debugging)
+    (function () {
+      function blockDevTools() {
+        const startTime = performance.now();
+        
+        (function () {
+          return false;
+        })
+        ["constructor"]("debugger")();
+
+        const endTime = performance.now();
+
+        if (endTime - startTime > 100) {
+          document.body.innerHTML = `
+            <div style="height:100vh; display:flex; justify-content:center; align-items:center; background:#1e293b; color:#fff; font-family:sans-serif; text-align:center; padding:20px;">
+              <div>
+                <h1 style="font-size:2rem; font-weight:bold; color:#ef4444; margin-bottom:10px;">DevTools Detected</h1>
+                <p style="color:#94a3b8;">Access is restricted. Please close Developer Tools to resume.</p>
+              </div>
+            </div>
+          `;
+        }
+      }
+
+      setInterval(blockDevTools, 100);
+    })();
+  </script>
 </body>
 </html>

@@ -18,7 +18,7 @@
       <p class="text-sm text-gray-500 mt-1">Enter SKU to view product media directly on the page</p>
     </div>
 
-    <!-- INLINE EMBEDDED MEDIA VIEWER -->
+    <!-- INLINE EMBEDDED MEDIA VIEWER (Height optimized for image) -->
     <div id="inline-viewer-container" class="hidden space-y-3 border border-pink-200 bg-pink-50/40 rounded-2xl p-4 shadow-sm">
       <div class="flex justify-between items-center border-b border-pink-100 pb-2">
         <div class="flex items-center gap-2">
@@ -30,11 +30,12 @@
         </button>
       </div>
       
-      <div class="w-full h-[65vh] bg-slate-900 rounded-xl shadow-sm border border-gray-200 relative overflow-hidden flex items-center justify-center p-4">
-        <div id="inline-loader" class="absolute inset-0 flex items-center justify-center bg-white z-10 text-gray-500 font-medium text-sm">
+      <!-- Optimized wrapper without unwanted top/bottom gaps -->
+      <div class="w-full bg-slate-900 rounded-xl shadow-sm border border-gray-200 relative overflow-hidden flex items-center justify-center p-2">
+        <div id="inline-loader" class="absolute inset-0 flex items-center justify-center bg-white z-10 text-gray-500 font-medium text-sm min-h-[250px]">
           Loading media...
         </div>
-        <div id="media-output-wrapper" class="w-full h-full flex items-center justify-center"></div>
+        <div id="media-output-wrapper" class="w-full flex items-center justify-center"></div>
       </div>
     </div>
 
@@ -99,7 +100,6 @@
       products = data ? Object.keys(data).map(id => ({ id, ...data[id] })) : [];
     });
 
-    // Button Freeze & Spinner Toggle Handler
     function setButtonLoading(isLoading) {
       const btn = document.getElementById('search-btn');
       if (isLoading) {
@@ -138,7 +138,8 @@
       if (isImage) {
         const img = document.createElement('img');
         img.src = link;
-        img.className = "max-w-full max-h-full object-contain rounded-lg shadow-md";
+        // Image will scale naturally to fill width cleanly without empty top/bottom gaps
+        img.className = "w-full h-auto max-h-[75vh] object-contain rounded-lg shadow-md";
         img.onload = function() {
           loader.classList.add('hidden');
           setButtonLoading(false); 
@@ -146,13 +147,13 @@
         img.onerror = function() {
           loader.classList.add('hidden');
           setButtonLoading(false); 
-          wrapper.innerHTML = `<p class="text-red-400 text-sm font-medium">Failed to load image preview. <a href="${link}" target="_blank" class="underline text-pink-400">Open directly</a></p>`;
+          wrapper.innerHTML = `<p class="text-red-400 text-sm font-medium py-10">Failed to load image preview. <a href="${link}" target="_blank" class="underline text-pink-400">Open directly</a></p>`;
         };
         wrapper.appendChild(img);
       } else {
         const iframe = document.createElement('iframe');
         iframe.src = link;
-        iframe.className = "w-full h-full border-0 bg-white rounded-lg";
+        iframe.className = "w-full h-[65vh] border-0 bg-white rounded-lg";
         iframe.onload = function() {
           loader.classList.add('hidden');
           setButtonLoading(false); 

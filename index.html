@@ -285,7 +285,7 @@
             if (/[A-Z]/.test(cleanAwb)) {
                 // Route EMS Speed Post (AM...IN) to ATS
                 if (/^[A-Z]{2}\d{9}IN$/.test(cleanAwb)) return { name: 'ATS', class: 'badge-ats' };
-                // Route Wishlink Ekart (SRSC... and SRSP...)
+                // Route Wishlink Ekart (SRSC... or SRSP...)
                 if (cleanAwb.startsWith('SRSC') || cleanAwb.startsWith('SRSP')) return { name: 'E-Kart (Wishlink)', class: 'badge-flipkart' };
                 
                 if (cleanAwb.startsWith('SF') && !cleanAwb.startsWith('MYSF')) return { name: 'Shadowfax', class: 'badge-shadowfax' };
@@ -331,7 +331,7 @@
             const isFlipkartSig = awb.startsWith('FMP'); // STRICT FMP ONLY
             const isValmoSig = awb.startsWith('VL');
             
-            // Wishlink accepts both SRSC and SRSP
+            // Fix: Keep isWishlinkSig strictly for Wishlink Ekart prefixes so it doesn't break Xpressbees/Delhivery on other channels
             const isWishlinkSig = awb.startsWith('SRSC') || awb.startsWith('SRSP');
             
             const isAmazonSig = /^\d{12,16}$/.test(awb) || /^[A-Z]{2}\d{9}IN$/.test(awb);
@@ -342,6 +342,7 @@
             if (marketplace === 'Meesho' && (isFlipkartSig || isMyntraSig || isWishlinkSig)) return false; // Allows numeric awbs
             if (marketplace === 'Amazon' && !isAmazonSig) return false;
             
+            // Fix: Wishlink validates if it has the SRSC/SRSP signature OR if it is one of the shared couriers
             if (marketplace === 'Wishlink' && !isWishlinkSig && !['Xpressbees', 'BlueDart', 'Shadowfax', 'Delhivery'].includes(courierName)) return false;
             
             return true;
@@ -387,8 +388,8 @@
                             showMessage(`❌ INVALID BARCODE: Flipkart parcel must start with 'FMP'.`, 'text-red-600 bg-red-100 px-3 py-1 rounded');
                         } else if (finalSeller === 'Myntra' && !awb.startsWith('MY')) {
                             showMessage(`❌ INVALID BARCODE: Myntra parcel must start with 'MY'.`, 'text-red-600 bg-red-100 px-3 py-1 rounded');
-                        } else if (finalSeller === 'Wishlink' && !(awb.startsWith('SRSC') || awb.startsWith('SRSP')) && !['Xpressbees', 'BlueDart', 'Shadowfax', 'Delhivery'].includes(courierInfo.name)) {
-                            showMessage(`❌ INVALID BARCODE: Wishlink parcel must start with 'SRSC'/'SRSP' or be a valid Xpressbees, BlueDart, Shadowfax, or Delhivery AWB.`, 'text-red-600 bg-red-100 px-3 py-1 rounded');
+                        } else if (finalSeller === 'Wishlink' && !awb.startsWith('SRSC') && !awb.startsWith('SRSP') && !['Xpressbees', 'BlueDart', 'Shadowfax', 'Delhivery'].includes(courierInfo.name)) {
+                            showMessage(`❌ INVALID BARCODE: Wishlink parcel must start with 'SRSC' or 'SRSP', or be a valid Xpressbees, BlueDart, Shadowfax, or Delhivery AWB.`, 'text-red-600 bg-red-100 px-3 py-1 rounded');
                         } else {
                             showMessage(`❌ Mismatch! This AWB format does not match ${finalSeller}.`, 'text-red-600 bg-red-100 px-3 py-1 rounded');
                         }

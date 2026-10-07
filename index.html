@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>berryliciousclothing</title>
+    <title>berryliciousclothing v2.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
@@ -37,7 +37,10 @@
     <!-- Header -->
     <header class="theme-bg text-white shadow-md transition-colors duration-300">
         <div class="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex justify-between items-center">
-            <h1 class="text-2xl font-bold tracking-tight">berryliciousclothing</h1>
+            <h1 class="text-2xl font-bold tracking-tight flex items-center">
+                berryliciousclothing 
+                <span class="text-xs font-bold bg-white/30 px-2 py-1 rounded-full ml-3 tracking-wider">v2.1</span>
+            </h1>
             <div class="flex items-center space-x-3">
                 <button onclick="switchView('scanner')" id="nav-scanner-btn" class="bg-white text-gray-800 text-sm font-bold px-4 py-2 rounded-lg shadow-sm transition-all">📦 Scanner</button>
                 <button onclick="switchView('reports')" id="nav-reports-btn" class="bg-white/25 hover:bg-white/30 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-all">📊 Reports & Search</button>
@@ -285,6 +288,7 @@
             if (/[A-Z]/.test(cleanAwb)) {
                 // Route EMS Speed Post (AM...IN) to ATS
                 if (/^[A-Z]{2}\d{9}IN$/.test(cleanAwb)) return { name: 'ATS', class: 'badge-ats' };
+                
                 // Route Wishlink Ekart (SRSC... or SRSP...)
                 if (cleanAwb.startsWith('SRSC') || cleanAwb.startsWith('SRSP')) return { name: 'E-Kart (Wishlink)', class: 'badge-flipkart' };
                 
@@ -331,18 +335,18 @@
             const isFlipkartSig = awb.startsWith('FMP'); // STRICT FMP ONLY
             const isValmoSig = awb.startsWith('VL');
             
-            // Fix: Keep isWishlinkSig strictly for Wishlink Ekart prefixes so it doesn't break Xpressbees/Delhivery on other channels
+            // Support for both SRSC and SRSP for Wishlink Ekart
             const isWishlinkSig = awb.startsWith('SRSC') || awb.startsWith('SRSP');
             
             const isAmazonSig = /^\d{12,16}$/.test(awb) || /^[A-Z]{2}\d{9}IN$/.test(awb);
 
-            // Galti pakadne ke rules
+            // Error Checking Rules
             if (marketplace === 'Flipkart' && !isFlipkartSig) return false;
             if (marketplace === 'Myntra' && !isMyntraSig) return false;
             if (marketplace === 'Meesho' && (isFlipkartSig || isMyntraSig || isWishlinkSig)) return false; // Allows numeric awbs
             if (marketplace === 'Amazon' && !isAmazonSig) return false;
             
-            // Fix: Wishlink validates if it has the SRSC/SRSP signature OR if it is one of the shared couriers
+            // Wishlink validates if it has the SRSC/SRSP signature OR if it is one of the shared couriers
             if (marketplace === 'Wishlink' && !isWishlinkSig && !['Xpressbees', 'BlueDart', 'Shadowfax', 'Delhivery'].includes(courierName)) return false;
             
             return true;

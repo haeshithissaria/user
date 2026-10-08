@@ -339,7 +339,7 @@
             // Support for both SRSC and SRSP for Wishlink Ekart
             const isWishlinkSig = awb.startsWith('SRSC') || awb.startsWith('SRSP');
             
-            const isAmazonSig = /^\d{12,16}$/.test(awb) || /^[A-Z]{2}\d{9}IN$/.test(awb);
+            const isAmazonSig = /^\d{12,16}$/.test(awb) \vert{}\vert{} /^[A-Z]{2}\d{9}IN$/.test(awb);
 
             // Error Checking Rules
             if (marketplace === 'Flipkart' && !isFlipkartSig) return false;

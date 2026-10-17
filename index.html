@@ -1,269 +1,2338 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Berrylicious - SKU Search Portal</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/lucide@latest"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dispatch Shipment List</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,400..800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<style>
+  /* Layout: upload strip and marketplace selector across the top; channel cards
+     (channel → date → pack log → orders) on the left; WhatsApp message panel on the right. */
+
+  /* ==========================================================================
+     1. Design tokens
+     ========================================================================== */
+
+  :root {
+    --bg: #ECEFF3;
+    --surface: #FFFFFF;
+    --sunk: #E6EAF0;
+    --line: #CBD3DD;
+    --ink: #141C25;
+    --muted: #566475;
+    --accent: #2445C2;
+    --accent-ink: #FFFFFF;
+    --accent-soft: #DFE5FA;
+    --warn: #8A5000;
+    --warn-soft: #FBEBCD;
+    --toast-bg: #141C25;
+    --toast-fg: #F3F6F9;
+
+    --font-display: "Archivo", "Arial Narrow", system-ui, sans-serif;
+    --font-body: "Archivo", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-data: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+    --radius: 12px;
+    --radius-small: 8px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0E131A;
+      --surface: #161D26;
+      --sunk: #1C2530;
+      --line: #2A3543;
+      --ink: #E5EBF2;
+      --muted: #92A1B3;
+      --accent: #8DA6FF;
+      --accent-ink: #0A1233;
+      --accent-soft: #1D2950;
+      --warn: #F0B457;
+      --warn-soft: #3A2A10;
+      --toast-bg: #E5EBF2;
+      --toast-fg: #0E131A;
+      color-scheme: dark;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #0E131A;
+    --surface: #161D26;
+    --sunk: #1C2530;
+    --line: #2A3543;
+    --ink: #E5EBF2;
+    --muted: #92A1B3;
+    --accent: #8DA6FF;
+    --accent-ink: #0A1233;
+    --accent-soft: #1D2950;
+    --warn: #F0B457;
+    --warn-soft: #3A2A10;
+    --toast-bg: #E5EBF2;
+    --toast-fg: #0E131A;
+    color-scheme: dark;
+  }
+
+  /* ==========================================================================
+     2. Base
+     ========================================================================== */
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  [hidden] {
+    display: none !important;
+  }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 15px/1.45 var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+    color: inherit;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  input[type="search"],
+  input[type="text"],
+  select {
+    min-height: 38px;
+    max-width: 100%;
+    padding: 6px 10px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-small);
+    background: var(--surface);
+  }
+
+  details > summary {
+    list-style: none;
+  }
+
+  details > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  /* ==========================================================================
+     3. Page layout
+     ========================================================================== */
+
+  .app {
+    display: grid;
+    gap: 14px;
+    max-width: 1380px;
+    margin: 0 auto;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 20px 56px;
+  }
+
+  .app-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px 20px;
+  }
+
+  .app-title {
+    margin: 0;
+    font-family: var(--font-display);
+    font-stretch: 78%;
+    font-weight: 800;
+    font-size: 1.9rem;
+    line-height: 1;
+    letter-spacing: 0.01em;
+    text-transform: uppercase;
+  }
+
+  .file-info {
+    min-width: 0;
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+
+  .file-info strong {
+    color: var(--ink);
+    font-family: var(--font-data);
+    font-size: 0.8rem;
+    font-weight: 600;
+    word-break: break-all;
+  }
+
+  .workspace {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 390px;
+    align-items: start;
+    gap: 14px;
+  }
+
+  .card {
+    min-width: 0;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+  }
+
+  /* ==========================================================================
+     4. Buttons
+     ========================================================================== */
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 40px;
+    padding: 8px 16px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-small);
+    background: var(--surface);
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  .btn:hover {
+    border-color: var(--muted);
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-ink);
+  }
+
+  .btn-primary:hover {
+    filter: brightness(1.08);
+  }
+
+  .btn-small {
+    min-height: 34px;
+    padding: 5px 12px;
+    font-size: 0.85rem;
+  }
+
+  .btn[disabled] {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  .btn-mini {
+    min-height: 28px;
+    padding: 3px 10px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--surface);
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .btn-mini:hover {
+    border-color: var(--muted);
+  }
+
+  /* ==========================================================================
+     5. Upload, alerts, column picker
+     ========================================================================== */
+
+  .upload {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px 16px;
+    padding: 14px 16px;
+    border: 1.5px dashed var(--line);
+    border-radius: 10px;
+    background: var(--surface);
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+
+  .upload.is-dragging {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+  }
+
+  .upload svg {
+    flex: none;
+    color: var(--accent);
+  }
+
+  .upload-text {
+    flex: 1 1 200px;
+    min-width: 0;
+    font-weight: 650;
+  }
+
+  .upload input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .alert {
+    margin: 0;
+    padding: 10px 14px;
+    border-radius: var(--radius-small);
+    background: var(--warn-soft);
+    color: var(--warn);
+    font-size: 0.88rem;
+    font-weight: 600;
+  }
+
+  .column-map {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 10px;
+    padding: 14px 16px;
+  }
+
+  .column-map label {
+    display: grid;
+    gap: 4px;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  /* ==========================================================================
+     6. Marketplace selector
+     ========================================================================== */
+
+  .marketplaces {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    max-width: 100%;
+    min-height: 38px;
+    padding: 6px 14px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--surface);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .chip-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .chip-count {
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+  }
+
+  .chip[aria-pressed="true"] {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: var(--bg);
+  }
+
+  .chip-warn {
+    background: var(--warn-soft);
+    border-color: var(--warn);
+    color: var(--warn);
+  }
+
+  .chip-warn[aria-pressed="true"] {
+    background: var(--warn);
+    border-color: var(--warn);
+    color: var(--surface);
+  }
+
+  /* ==========================================================================
+     7. Toolbar
+     ========================================================================== */
+
+  .channels {
+    display: grid;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+  }
+
+  .toolbar input[type="search"] {
+    flex: 1 1 220px;
+    min-width: 0;
+  }
+
+  .field-inline {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.88rem;
+  }
+
+  .search-result {
+    flex: 1 1 100%;
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+
+  .link-button {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--accent);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+  }
+
+  /* ==========================================================================
+     8. Channel cards
+     ========================================================================== */
+
+  .channel-list {
+    display: grid;
+    gap: 10px;
+  }
+
+  .channel {
+    overflow: hidden;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+  }
+
+  .channel-summary {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: 6px 14px;
+    padding: 14px 16px;
+    cursor: pointer;
+  }
+
+  .channel-summary:hover {
+    background: var(--sunk);
+  }
+
+  .channel[open] > .channel-summary {
+    border-bottom: 1px solid var(--line);
+  }
+
+  .chevron {
+    display: inline-block;
+    width: 9px;
+    height: 9px;
+    margin: 0 4px;
+    border-right: 2px solid var(--muted);
+    border-bottom: 2px solid var(--muted);
+    transform: rotate(-45deg);
+    transition: transform 0.15s;
+  }
+
+  details[open] > summary .chevron {
+    transform: rotate(45deg);
+  }
+
+  .channel-heading {
+    min-width: 0;
+  }
+
+  .channel-name {
+    display: block;
+    font-family: var(--font-display);
+    font-stretch: 85%;
+    font-weight: 750;
+    font-size: 1.1rem;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+  }
+
+  .channel-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 10px;
+    margin-top: 4px;
+    color: var(--muted);
+    font-size: 0.8rem;
+  }
+
+  .marketplace-tag {
+    padding: 2px 7px;
+    border-radius: 4px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .pack-log-range {
+    font-family: var(--font-data);
+    font-size: 0.78rem;
+  }
+
+  .channel-total {
+    color: var(--muted);
+    font-size: 0.8rem;
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .channel-total strong {
+    display: block;
+    color: var(--ink);
+    font-family: var(--font-display);
+    font-stretch: 80%;
+    font-size: 1.7rem;
+    font-weight: 800;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .channel-actions {
+    display: flex;
+    gap: 6px;
+  }
+
+  .channel-body {
+    padding: 2px 0 12px;
+  }
+
+  .date-heading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 10px;
+    margin: 0;
+    padding: 14px 16px 8px;
+    font-family: var(--font-display);
+    font-stretch: 85%;
+    font-size: 0.92rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .date-heading span {
+    color: var(--muted);
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+
+  /* ==========================================================================
+     9. Pack log sections and order tables
+     ========================================================================== */
+
+  .pack-log {
+    margin: 0 12px 8px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-small);
+  }
+
+  .pack-log-summary {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 12px;
+    background: var(--sunk);
+    cursor: pointer;
+  }
+
+  .pack-log[open] > .pack-log-summary {
+    border-bottom: 1px solid var(--line);
+  }
+
+  .pack-log-name {
+    font-weight: 650;
+  }
+
+  .pack-log-name strong {
+    color: var(--accent);
+    font-family: var(--font-data);
+    font-size: 1rem;
+    font-weight: 600;
+  }
+
+  .pack-log-count {
+    flex: 1;
+    color: var(--muted);
+    font-family: var(--font-data);
+    font-size: 0.8rem;
+  }
+
+  .table-wrap {
+    overflow-x: auto;
+  }
+
+  .orders {
+    width: 100%;
+    border-collapse: collapse;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .orders th {
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-align: left;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .orders td {
+    padding: 6px 12px;
+    border-bottom: 1px solid var(--sunk);
+    font-size: 0.86rem;
+    white-space: nowrap;
+  }
+
+  .orders tr:last-child td {
+    border-bottom: 0;
+  }
+
+  .orders .num {
+    width: 3.5em;
+    color: var(--muted);
+    font-size: 0.8rem;
+    text-align: right;
+  }
+
+  .orders .mono {
+    font-family: var(--font-data);
+    font-size: 0.82rem;
+  }
+
+  .orders [data-copy] {
+    cursor: copy;
+  }
+
+  .orders [data-copy]:hover {
+    background: var(--accent-soft);
+  }
+
+  .orders tr.is-missing td {
+    background: var(--warn-soft);
+  }
+
+  .orders tr.is-missing .num {
+    box-shadow: inset 3px 0 0 var(--warn);
+  }
+
+  .missing-label {
+    color: var(--warn);
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .badge {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 0 5px;
+    border-radius: 3px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-family: var(--font-body);
+    font-size: 0.68rem;
+    font-weight: 700;
+  }
+
+  .empty-state {
+    margin: 0;
+    padding: 40px 16px;
+    color: var(--muted);
+    text-align: center;
+  }
+
+  /* ==========================================================================
+     10. WhatsApp message panel
+     ========================================================================== */
+
+  .message-panel {
+    position: sticky;
+    top: calc(env(safe-area-inset-top, 0px) + 12px);
+    display: grid;
+    gap: 14px;
+    padding: 16px;
+  }
+
+  .panel-title {
+    margin: 0;
+    font-family: var(--font-display);
+    font-stretch: 80%;
+    font-size: 1.15rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+
+  .panel-scope {
+    margin: 4px 0 0;
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+
+  .field {
+    display: grid;
+    gap: 5px;
+  }
+
+  .field-label {
+    color: var(--muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+
+  .options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 18px;
+  }
+
+  .option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 30px;
+    font-size: 0.88rem;
+    cursor: pointer;
+  }
+
+  .option input {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    accent-color: var(--accent);
+  }
+
+  .field-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .field-chip {
+    min-height: 32px;
+    padding: 4px 10px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--surface);
+    font-size: 0.83rem;
+    cursor: pointer;
+  }
+
+  .field-chip[aria-pressed="true"] {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+    color: var(--accent);
+    font-weight: 650;
+  }
+
+  .preview {
+    width: 100%;
+    min-height: 260px;
+    padding: 10px 12px;
+    overflow: auto;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-small);
+    background: var(--sunk);
+    font: 12.5px/1.5 var(--font-data);
+    white-space: pre;
+    resize: vertical;
+  }
+
+  .button-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .button-row .btn {
+    flex: 1 1 140px;
+  }
+
+  .note {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.8rem;
+  }
+
+  /* ==========================================================================
+     11. Toast
+     ========================================================================== */
+
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+    z-index: 10;
+    max-width: calc(100vw - 32px);
+    padding: 10px 16px;
+    border-radius: var(--radius-small);
+    background: var(--toast-bg);
+    color: var(--toast-fg);
+    font-size: 0.88rem;
+    font-weight: 600;
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, 20px);
+    transition: opacity 0.18s, transform 0.18s;
+  }
+
+  .toast.is-visible {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+
+  /* ==========================================================================
+     12. Picklist (printed only)
+     ========================================================================== */
+
+  .picklist {
+    display: none;
+  }
+
+  /* ==========================================================================
+     13. Responsive
+     ========================================================================== */
+
+  @media (max-width: 980px) {
+    .workspace {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .message-panel {
+      position: static;
+    }
+  }
+
+  @media (max-width: 560px) {
+    .app-title {
+      font-size: 1.55rem;
+    }
+
+    .channel-summary {
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      padding: 12px;
+    }
+
+    .channel-actions {
+      grid-column: 2 / -1;
+    }
+
+    .pack-log {
+      margin: 0 8px 8px;
+    }
+
+    .orders th,
+    .orders td {
+      padding-left: 8px;
+      padding-right: 8px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      transition: none !important;
+    }
+  }
+
+  /* ==========================================================================
+     14. Print: bordered picklist in the left half of the page
+     ========================================================================== */
+
+  @media print {
+    :root,
+    :root[data-theme] {
+      --bg: #FFFFFF;
+      --ink: #000000;
+      color-scheme: light;
+    }
+
+    @page {
+      size: A4;
+      margin: 10mm;
+    }
+
+    body {
+      background: #FFFFFF;
+      color: #000000;
+    }
+
+    .app {
+      display: block;
+      max-width: none;
+      padding: 0;
+    }
+
+    .app > :not(.picklist),
+    .toast {
+      display: none !important;
+    }
+
+    .picklist {
+      display: block;
+      width: 95mm;
+      font-family: var(--font-body);
+    }
+
+    .picklist-meta {
+      margin: 0 0 3mm;
+      font-size: 8pt;
+    }
+
+    .picklist-channel {
+      break-before: page;
+    }
+
+    .picklist-channel:first-of-type {
+      break-before: auto;
+    }
+
+    .picklist-channel h2 {
+      margin: 0 0 2mm;
+      padding: 1.5mm 2mm;
+      border: 1.2px solid #000000;
+      font-family: var(--font-display);
+      font-stretch: 85%;
+      font-size: 13pt;
+      font-weight: 800;
+      line-height: 1.2;
+    }
+
+    .picklist-channel h2 span {
+      font-size: 10pt;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .picklist-table {
+      width: 100%;
+      margin: 0 0 4mm;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+
+    .picklist-table .col-qty,
+    .picklist-table .col-done {
+      width: 15mm;
+    }
+
+    .picklist-table th,
+    .picklist-table td {
+      padding: 1.2mm 2mm;
+      border: 0.8px solid #000000;
+    }
+
+    .picklist-table .pack-log-title {
+      background: #EEEEEE;
+      font-size: 11pt;
+      font-weight: 800;
+      text-align: left;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .picklist-table .pack-log-title span {
+      font-size: 9pt;
+      font-weight: 600;
+    }
+
+    .picklist-table .column-labels th {
+      font-size: 7pt;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-align: left;
+      text-transform: uppercase;
+    }
+
+    .picklist-table td {
+      font-size: 10pt;
+    }
+
+    .picklist-table .sku {
+      font-family: var(--font-data);
+      font-weight: 500;
+      overflow-wrap: anywhere;
+    }
+
+    .picklist-table .qty {
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .picklist-table .qty-multi {
+      font-size: 12pt;
+      font-weight: 800;
+    }
+
+    .picklist-table .done {
+      text-align: center;
+    }
+
+    .picklist-table td.done span {
+      display: inline-block;
+      width: 4mm;
+      height: 4mm;
+      border: 1px solid #000000;
+      vertical-align: middle;
+    }
+
+    .picklist-table tr {
+      break-inside: avoid;
+    }
+  }
+</style>
 </head>
-<body class="bg-gray-100 min-h-screen p-4 flex items-center justify-center">
+<body>
 
-  <div class="max-w-3xl w-full bg-white p-6 rounded-2xl shadow-lg border border-gray-200 space-y-6">
+<div class="app">
 
-    <div class="text-center">
-      <h2 class="text-2xl font-bold text-gray-900 flex items-center justify-center gap-2">
-        <i data-lucide="sparkles" class="w-6 h-6 text-pink-600"></i> Berrylicious Search Portal
-      </h2>
-      <p class="text-sm text-gray-500 mt-1">Enter SKU to view product media directly on the page</p>
-    </div>
+  <header class="app-header">
+    <h1 class="app-title">Dispatch Shipment List</h1>
+    <p class="file-info" id="fileInfo" hidden></p>
+  </header>
 
-    <!-- INLINE EMBEDDED MEDIA VIEWER (Height optimized for image) -->
-    <div id="inline-viewer-container" class="hidden space-y-3 border border-pink-200 bg-pink-50/40 rounded-2xl p-4 shadow-sm">
-      <div class="flex justify-between items-center border-b border-pink-100 pb-2">
-        <div class="flex items-center gap-2">
-          <i data-lucide="image" class="w-5 h-5 text-pink-600"></i>
-          <span id="viewer-sku-title" class="font-bold text-gray-900 text-sm">Viewing SKU: </span>
-        </div>
-        <button onclick="closeViewer()" class="text-gray-500 hover:text-red-600 bg-white border border-gray-200 hover:bg-gray-100 px-3 py-1 rounded-lg text-xs font-medium transition cursor-pointer flex items-center gap-1">
-          <i data-lucide="x" class="w-3.5 h-3.5"></i> Close View
-        </button>
+  <label class="upload" id="upload" for="fileInput">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M12 15V4" />
+      <path d="m7 9 5-5 5 5" />
+      <path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" />
+    </svg>
+    <span class="upload-text">Upload OMSGuru order export (CSV or Excel)</span>
+    <span class="btn btn-primary">Choose file</span>
+    <input type="file" id="fileInput" accept=".csv,.txt,.xlsx,.xls,.xlsm">
+  </label>
+
+  <p class="alert" id="alert" role="alert" hidden></p>
+
+  <section class="card column-map" id="columnMap" aria-label="Choose columns" hidden></section>
+
+  <nav class="marketplaces" id="marketplaces" aria-label="Marketplace" hidden></nav>
+
+  <main class="workspace" id="workspace" hidden>
+
+    <section class="channels" aria-label="Channels">
+      <div class="card toolbar">
+        <input type="search" id="searchInput" placeholder="Search SKU or shipment ID" aria-label="Search">
+        <label class="field-inline" for="rowOrderSelect">
+          Rows
+          <select id="rowOrderSelect">
+            <option value="file">File order</option>
+            <option value="sku">By SKU</option>
+            <option value="ship">By shipment ID</option>
+          </select>
+        </label>
+        <button type="button" class="btn btn-small" id="expandAllButton">Expand all</button>
+        <button type="button" class="btn btn-small" id="collapseAllButton">Collapse all</button>
+        <p class="search-result" id="searchResult" hidden></p>
       </div>
 
-      <!-- Optimized wrapper without unwanted top/bottom gaps -->
-      <div class="w-full bg-slate-900 rounded-xl shadow-sm border border-gray-200 relative overflow-hidden flex items-center justify-center p-2 min-h-[250px]">
-        <div id="inline-loader" class="absolute inset-0 flex items-center justify-center bg-white z-10 text-gray-500 font-medium text-sm">
-          Loading media...
-        </div>
-        <div id="media-output-wrapper" class="w-full h-full flex items-center justify-center"></div>
-      </div>
-    </div>
+      <div class="channel-list" id="channelList"></div>
+      <p class="card empty-state" id="emptyState" hidden>No orders match this search.</p>
+    </section>
 
-    <!-- SEARCH FORM -->
-    <form onsubmit="handleUserSearch(event)" class="flex gap-2">
-      <div class="relative flex-grow">
-        <input type="text" id="user-search-input" placeholder="e.g. K1640J" required
-          class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 text-lg uppercase font-semibold">
-        <i data-lucide="search" class="w-5 h-5 text-gray-400 absolute left-3 top-4"></i>
-      </div>
-      <button type="submit" id="search-btn" class="bg-pink-600 hover:bg-pink-700 text-white font-medium px-6 py-3 rounded-xl flex items-center justify-center gap-2 transition cursor-pointer">
-        Find SKU
-      </button>
-    </form>
-
-    <div id="search-feedback" class="hidden rounded-xl p-4 text-center font-medium"></div>
-
-    <!-- MULTI-MATCH TABLE CONTAINER -->
-    <div id="multi-result-container" class="hidden border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-      <div class="bg-amber-50 border-b border-amber-200 p-3 text-amber-800 text-xs font-semibold flex items-center gap-2">
-        <i data-lucide="alert-circle" class="w-4 h-4"></i> Multiple SKUs found:
+    <aside class="card message-panel" aria-label="WhatsApp message">
+      <div>
+        <h2 class="panel-title">WhatsApp message</h2>
+        <p class="panel-scope" id="messageScope"></p>
       </div>
 
-      <div class="overflow-x-auto">
-        <table class="w-full text-left text-sm">
-          <thead class="bg-gray-50 border-b text-gray-600 uppercase text-xs">
-            <tr>
-              <th class="py-3 px-4">#</th>
-              <th class="py-3 px-4">SKU Code</th>
-              <th class="py-3 px-4 text-right">Action</th>
-            </tr>
-          </thead>
-          <tbody id="multi-result-body" class="divide-y divide-gray-100"></tbody>
-        </table>
+      <label class="field" for="titleInput">
+        <span class="field-label">Title line</span>
+        <input type="text" id="titleInput" maxlength="60">
+      </label>
+
+      <div class="options">
+        <label class="option"><input type="checkbox" id="numberLinesOption"> Number lines</label>
+        <label class="option"><input type="checkbox" id="headerOption"> Title &amp; total</label>
+        <label class="option"><input type="checkbox" id="alignedOption"> Aligned columns</label>
       </div>
-    </div>
 
-  </div>
+      <div class="field">
+        <span class="field-label">Fields in each line</span>
+        <div class="field-chips" id="fieldChips"></div>
+      </div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+      <textarea class="preview" id="messagePreview" readonly spellcheck="false" aria-label="Message preview"></textarea>
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyCCvVLVvphi5VLk30MMiOyvX_HuDG7HdHU",
-      authDomain: "sku-finder-756b7.firebaseapp.com",
-      databaseURL: "https://sku-finder-756b7-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "sku-finder-756b7",
-      storageBucket: "sku-finder-756b7.firebasestorage.app",
-      messagingSenderId: "533564999771",
-      appId: "1:533564999771:web:f9a22330ea6a139d40d77e"
-    };
+      <div class="button-row" id="copyButtons"></div>
+      <div class="button-row">
+        <button type="button" class="btn" id="copyExcelButton">Copy for Excel</button>
+        <button type="button" class="btn" id="printButton" hidden>Print picklist</button>
+      </div>
+      <p class="note" id="printNote" hidden>Printing works in the offline copy of this page.</p>
+    </aside>
 
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-    const productsRef = ref(db, 'products');
+  </main>
 
-    let products = [];
+  <div class="picklist" id="picklist"></div>
 
-    onValue(productsRef, (snapshot) => {
-      const data = snapshot.val();
-      products = data ? Object.keys(data).map(id => ({ id, ...data[id] })) : [];
-    });
+</div>
 
-    // Button Freeze & Spinner Toggle Handler
-    function setButtonLoading(isLoading) {
-      const btn = document.getElementById('search-btn');
-      if (isLoading) {
-        btn.disabled = true;
-        btn.classList.add('opacity-75', 'cursor-not-allowed');
-        btn.classList.remove('hover:bg-pink-700', 'cursor-pointer');
-        btn.innerHTML = `
-          <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-          Loading...
-        `;
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+'use strict';
+
+/* ==========================================================================
+   Configuration
+   ========================================================================== */
+
+/**
+ * Columns read from the OMSGuru export.
+ * Each is found by its header name first, then by its usual column letter.
+ */
+const COLUMNS = [
+  { key: 'sku',     label: 'SKU',         letter: 'X',  headers: ['product sku code', 'sku code', 'product sku', 'sku'] },
+  { key: 'ship',    label: 'Shipment ID', letter: 'BD', headers: ['shipment tracker', 'shipment id', 'tracking id', 'awb', 'awb no', 'awb number'] },
+  { key: 'packLog', label: 'Pack log',    letter: 'CA', headers: ['invoice pack log', 'pack log'] },
+  { key: 'channel', label: 'Channel',     letter: 'AD', headers: ['channel name', 'channel'] },
+  { key: 'qty',     label: 'Qty',         letter: 'AH', headers: ['qty', 'quantity'], optional: true },
+];
+
+/** Marketplace names recognised inside a channel name, checked in this order. */
+const MARKETPLACES = [
+  ['tata cliq', 'Tata CLiQ'],
+  ['tatacliq', 'Tata CLiQ'],
+  ['flipkart', 'Flipkart'],
+  ['myntra', 'Myntra'],
+  ['amazon', 'Amazon'],
+  ['ajio', 'AJIO'],
+  ['meesho', 'Meesho'],
+  ['nykaa', 'Nykaa'],
+  ['jiomart', 'JioMart'],
+  ['jio mart', 'JioMart'],
+  ['snapdeal', 'Snapdeal'],
+  ['limeroad', 'LimeRoad'],
+  ['glowroad', 'GlowRoad'],
+  ['shopify', 'Shopify'],
+  ['firstcry', 'FirstCry'],
+  ['shoppers stop', 'Shoppers Stop'],
+  ['pepperfry', 'Pepperfry'],
+  ['paytm', 'Paytm'],
+];
+
+/** Fields that can appear on each WhatsApp line. */
+const MESSAGE_FIELDS = [
+  { key: 'sku',     label: 'SKU' },
+  { key: 'ship',    label: 'Shipment ID' },
+  { key: 'packLog', label: 'Full pack log' },
+];
+
+const WHATSAPP_LIMIT = 60000; // WhatsApp rejects messages longer than about 65,000 characters
+const SETTINGS_KEY = 'dispatch-list-settings-v4';
+const XLSX_LIBRARY_URL = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+
+const IS_STANDALONE = (() => {
+  try {
+    return window.self === window.top;
+  } catch (error) {
+    return false;
+  }
+})();
+
+/* ==========================================================================
+   State
+   ========================================================================== */
+
+const state = {
+  fileName: '',
+  loadedAt: null,
+  headers: [],
+  rows: [],
+  columnIndex: {},
+  orders: [],
+  mainDate: '',
+
+  selectedMarketplaces: new Set(),
+  showAllMarketplaces: true,
+  search: '',
+  missingOnly: false,
+
+  openChannels: new Set(),
+  closedPackLogs: new Set(),
+  selectedPackLogs: new Set(),
+
+  channels: [],
+  messageParts: [],
+  printChannelIndex: null,
+
+  settings: {
+    title: 'Dispatch list',
+    rowOrder: 'file',
+    numberLines: true,
+    header: true,
+    aligned: false,
+    fields: { sku: true, ship: true, packLog: false },
+  },
+};
+
+loadSettings();
+
+/* ==========================================================================
+   Utilities
+   ========================================================================== */
+
+const $ = (selector) => document.querySelector(selector);
+
+const collator = new Intl.Collator('en', { numeric: true, sensitivity: 'base' });
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, (char) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  }[char]));
+}
+
+function plural(count, word) {
+  return `${count} ${word}${count === 1 ? '' : 's'}`;
+}
+
+function pieces(count) {
+  return count === 1 ? '1 pc' : `${count} pcs`;
+}
+
+function sumQty(orders) {
+  return orders.reduce((total, order) => total + order.qty, 0);
+}
+
+function columnLetter(index) {
+  if (index < 0) return '–';
+  let letters = '';
+  let n = index + 1;
+  while (n > 0) {
+    const remainder = (n - 1) % 26;
+    letters = String.fromCharCode(65 + remainder) + letters;
+    n = Math.floor((n - 1) / 26);
+  }
+  return letters;
+}
+
+function letterToIndex(letters) {
+  let n = 0;
+  for (const char of letters) n = n * 26 + (char.charCodeAt(0) - 64);
+  return n - 1;
+}
+
+function normaliseHeader(value) {
+  return String(value ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+function formatDate(isoDate) {
+  const date = new Date(`${isoDate}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return isoDate;
+  return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function formatNow() {
+  return new Date().toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+}
+
+/** Turns [48, 80, 94, 95, 96] into "48, 80, 94–96". */
+function compressRanges(numbers) {
+  const sorted = [...new Set(numbers)].sort((a, b) => a - b);
+  const ranges = [];
+  for (let i = 0; i < sorted.length;) {
+    let j = i;
+    while (j + 1 < sorted.length && sorted[j + 1] === sorted[j] + 1) j++;
+    ranges.push(j > i ? `${sorted[i]}–${sorted[j]}` : String(sorted[i]));
+    i = j + 1;
+  }
+  return ranges.join(', ');
+}
+
+function loadSettings() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null');
+    if (saved) {
+      state.settings = {
+        ...state.settings,
+        ...saved,
+        fields: { ...state.settings.fields, ...(saved.fields || {}) },
+      };
+    }
+  } catch (error) {
+    // Storage can be unavailable; the defaults are used instead.
+  }
+}
+
+function saveSettings() {
+  try {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(state.settings));
+  } catch (error) {
+    // Settings simply are not remembered when storage is unavailable.
+  }
+}
+
+/* ==========================================================================
+   Reading files
+   ========================================================================== */
+
+/** Parses CSV text, handling quoted fields, commas inside quotes and CRLF line ends. */
+function parseCsv(text) {
+  if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+
+  const firstLineEnd = text.indexOf('\n');
+  const firstLine = firstLineEnd > -1 ? text.slice(0, firstLineEnd) : text;
+  const delimiter = [',', ';', '\t']
+    .map((d) => [d, firstLine.split(d).length])
+    .sort((a, b) => b[1] - a[1])[0][0];
+
+  const rows = [];
+  let row = [];
+  let field = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+
+    if (inQuotes) {
+      if (char === '"' && text[i + 1] === '"') {
+        field += '"';
+        i++;
+      } else if (char === '"') {
+        inQuotes = false;
       } else {
-        btn.disabled = false;
-        btn.classList.remove('opacity-75', 'cursor-not-allowed');
-        btn.classList.add('hover:bg-pink-700', 'cursor-pointer');
-        btn.innerHTML = `Find SKU`;
+        field += char;
       }
+      continue;
     }
 
-    window.showViewer = function(sku, link) {
-      setButtonLoading(true); 
-      document.getElementById('viewer-sku-title').innerText = `Viewing SKU: ${sku}`;
-      const loader = document.getElementById('inline-loader');
-      const wrapper = document.getElementById('media-output-wrapper');
+    if (char === '"') {
+      inQuotes = true;
+    } else if (char === delimiter) {
+      row.push(field);
+      field = '';
+    } else if (char === '\n') {
+      row.push(field);
+      rows.push(row);
+      row = [];
+      field = '';
+    } else if (char !== '\r') {
+      field += char;
+    }
+  }
 
-      loader.classList.remove('hidden');
-      wrapper.innerHTML = '';
+  if (field !== '' || row.length) {
+    row.push(field);
+    rows.push(row);
+  }
+  return rows;
+}
 
-      document.getElementById('inline-viewer-container').classList.remove('hidden');
-      document.getElementById('inline-viewer-container').scrollIntoView({ behavior: 'smooth' });
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = src;
+    script.onload = resolve;
+    script.onerror = () => reject(new Error(`Could not load ${src}`));
+    document.head.appendChild(script);
+  });
+}
 
-      const isImage = /\.(jpeg|jpg|png|webp|gif|avif)(#|\?|$)/i.test(link) || link.includes('firebasestorage.googleapis.com') || link.includes('cloudinary') || link.includes('imgur');
+async function readRows(file) {
+  const extension = (file.name.split('.').pop() || '').toLowerCase();
 
-      if (isImage) {
-        const img = document.createElement('img');
-        img.src = link;
-        // Image will scale naturally to fill width cleanly without empty top/bottom gaps
-        img.className = "w-full h-auto max-h-[75vh] object-contain rounded-lg shadow-md";
-        img.onload = function() {
-          loader.classList.add('hidden');
-          setButtonLoading(false); 
-        };
-        img.onerror = function() {
-          loader.classList.add('hidden');
-          setButtonLoading(false); 
-          wrapper.innerHTML = `<p class="text-red-400 text-sm font-medium py-10">Failed to load image preview. <a href="${link}" target="_blank" class="underline text-pink-400">Open directly</a></p>`;
-        };
-        wrapper.appendChild(img);
-      } else {
-        const iframe = document.createElement('iframe');
-        iframe.src = link;
-        iframe.className = "w-full h-[65vh] border-0 bg-white rounded-lg";
-        iframe.onload = function() {
-          loader.classList.add('hidden');
-          setButtonLoading(false); 
-        };
-        wrapper.appendChild(iframe);
-      }
-    };
+  if (['xlsx', 'xls', 'xlsm'].includes(extension)) {
+    if (!window.XLSX) await loadScript(XLSX_LIBRARY_URL);
+    const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array' });
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    return XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: '' });
+  }
 
-    window.closeViewer = function() {
-      document.getElementById('inline-viewer-container').classList.add('hidden');
-      document.getElementById('media-output-wrapper').innerHTML = '';
-      setButtonLoading(false); 
-    };
+  return parseCsv(await file.text());
+}
 
-    window.handleUserSearch = function(e) {
-      e.preventDefault();
-      const query = document.getElementById('user-search-input').value.trim().toUpperCase();
-      const feedback = document.getElementById('search-feedback');
-      const multiContainer = document.getElementById('multi-result-container');
-      const multiBody = document.getElementById('multi-result-body');
+/** Finds the header row within the first rows, in case the export has title lines above it. */
+function findHeaderRow(rows) {
+  for (let i = 0; i < Math.min(rows.length, 15); i++) {
+    const cells = rows[i].map(normaliseHeader);
+    const hasKnownHeader = COLUMNS.some((column) => column.headers.some((h) => cells.includes(h)));
+    if (hasKnownHeader) return i;
+  }
+  return 0;
+}
 
-      feedback.classList.add('hidden');
-      multiContainer.classList.add('hidden');
-      multiBody.innerHTML = '';
-      closeViewer();
+async function loadFile(file) {
+  hideAlert();
 
-      if (!query) return;
+  let rows;
+  try {
+    rows = await readRows(file);
+  } catch (error) {
+    showAlert(`Couldn't read ${file.name}. Export the orders as CSV from OMSGuru and try again.`);
+    return;
+  }
 
-      const exactMatch = products.find(p => p.sku.toUpperCase() === query);
+  rows = rows.filter((row) => row && row.some((cell) => String(cell).trim() !== ''));
+  if (rows.length < 2) {
+    showAlert(`${file.name} has no order rows.`);
+    return;
+  }
 
-      if (exactMatch) {
-        showViewer(exactMatch.sku, exactMatch.link);
-        return;
-      }
+  const headerRow = findHeaderRow(rows);
+  state.fileName = file.name;
+  state.loadedAt = new Date();
+  state.headers = rows[headerRow].map((header) => String(header).trim());
+  state.rows = rows.slice(headerRow + 1);
+  
+  state.columnIndex = detectColumns(state.headers);
+  state.selectedMarketplaces.clear();
+  state.showAllMarketplaces = true;
+  state.search = '';
+  state.missingOnly = false;
+  state.openChannels = new Set();
+  state.closedPackLogs = new Set();
+  state.selectedPackLogs.clear();
+  $('#searchInput').value = '';
 
-      const matches = products
-        .filter(p => p.sku.toUpperCase().includes(query))
-        .sort((a, b) => a.sku.localeCompare(b.sku, undefined, { numeric: true }));
+  buildOrders();
+  renderAll();
+  showToast(`Loaded ${state.orders.length} orders from${file.name}`);
+}
 
-      if (matches.length === 0) {
-        feedback.className = "block bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 text-center font-medium";
-        feedback.innerHTML = `Wrong input or SKU not found! Try again.`;
-      } else {
-        multiContainer.classList.remove('hidden');
-        matches.forEach((prod, index) => {
-          const row = document.createElement('tr');
-          row.className = "hover:bg-gray-50 transition";
-          row.innerHTML = `
-            <td class="py-3 px-4 font-mono text-gray-500">${index + 1}</td>
-            <td class="py-3 px-4 font-bold text-gray-900">${escapeHtml(prod.sku)}</td>
-            <td class="py-3 px-4 text-right">
-              <button onclick="showViewer('${escapeHtml(prod.sku)}', '${escapeHtml(prod.link)}')" class="bg-pink-600 hover:bg-pink-700 text-white font-medium px-3 py-1.5 rounded-lg text-xs inline-flex items-center gap-1 transition cursor-pointer">
-                View Link <i data-lucide="eye" class="w-3.5 h-3.5"></i>
-              </button>
-            </td>
-          `;
-          multiBody.appendChild(row);
+/* ==========================================================================
+   Preparing orders
+   ========================================================================== */
+
+function detectColumns(headers) {
+  const normalised = headers.map(normaliseHeader);
+  const index = {};
+
+  for (const column of COLUMNS) {
+    let found = -1;
+    for (const name of column.headers) {
+      found = normalised.indexOf(name);
+      if (found > -1) break;
+    }
+    if (found < 0) {
+      const byLetter = letterToIndex(column.letter);
+      if (byLetter < headers.length) found = byLetter;
+    }
+    index[column.key] = found;
+  }
+  return index;
+}
+
+/** Removes the backtick OMSGuru puts before IDs, and ="..." wrappers from spreadsheets. */
+function cleanCell(value) {
+  return String(value ?? '')
+    .trim()
+    .replace(/^=?"(.*)"$/, '$1')
+    .replace(/^[`']+/, '')
+    .trim();
+}
+
+function marketplaceOf(channel) {
+  const name = channel.toLowerCase();
+  for (const [keyword, marketplace] of MARKETPLACES) {
+    if (name.includes(keyword)) return marketplace;
+  }
+  if (channel === 'No channel') return 'Other';
+  const parts = channel.split(/\s+-\s+/);
+  return parts.length > 1 ? parts[parts.length - 1].trim() : channel;
+}
+
+function buildOrders() {
+  const index = state.columnIndex;
+  const read = (row, key) => (index[key] > -1 ? cleanCell(row[index[key]]) : '');
+
+  state.orders = [];
+  state.rows.forEach((row, position) => {
+    const sku = read(row, 'sku');
+    const ship = read(row, 'ship');
+    const packLog = read(row, 'packLog');
+    if (!sku && !ship && !packLog) return;
+
+    const channel = read(row, 'channel') || 'No channel';
+    const qty = parseInt(read(row, 'qty'), 10);
+    // A pack log looks like yyyy-mm-dd-<number>. The number is what OMSGuru asks for when scanning.
+    const numberMatch = /-(\d+)\s*$/.exec(packLog);
+    const dateMatch = /^\d{4}-\d{2}-\d{2}/.exec(packLog);
+
+    state.orders.push({
+      position,
+      sku,
+      ship,
+      packLog,
+      channel,
+      marketplace: marketplaceOf(channel),
+      qty: qty > 0 ? qty : 1,
+      packLogNo: numberMatch ? Number(numberMatch[1]) : null,
+      packDate: dateMatch ? dateMatch[0] : '',
+      isMissing: !sku || !ship || !packLog,
+    });
+  });
+
+  const shipmentCount = new Map();
+  state.orders.forEach((order) => {
+    if (order.ship) shipmentCount.set(order.ship, (shipmentCount.get(order.ship) || 0) + 1);
+  });
+  state.orders.forEach((order) => {
+    order.shipmentRepeats = order.ship ? shipmentCount.get(order.ship) : 0;
+  });
+
+  const dateCount = new Map();
+  state.orders.forEach((order) => {
+    if (order.packDate) dateCount.set(order.packDate, (dateCount.get(order.packDate) || 0) + 1);
+  });
+  state.mainDate = [...dateCount.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] || '';
+}
+
+function mainDateLabel() {
+  return state.mainDate ? formatDate(state.mainDate) : '';
+}
+
+/* ==========================================================================
+   Filtering and grouping: channel → date → pack log → orders
+   ========================================================================== */
+
+function visibleOrders() {
+  const query = state.search.trim().toLowerCase();
+  return state.orders.filter((order) => {
+    if (!state.showAllMarketplaces && !state.selectedMarketplaces.has(order.marketplace)) return false;
+    if (state.missingOnly && !order.isMissing) return false;
+    if (query && !`${order.sku} ${order.ship} ${order.packLog}`.toLowerCase().includes(query)) return false;
+    return true;
+  });
+}
+
+function compareOrders(a, b) {
+  const rowOrder = state.settings.rowOrder;
+  return (
+    collator.compare(a.marketplace, b.marketplace) ||
+    collator.compare(a.channel, b.channel) ||
+    (!a.packDate - !b.packDate) ||
+    collator.compare(a.packDate, b.packDate) ||
+    (!a.packLog - !b.packLog) ||
+    ((a.packLogNo === null) - (b.packLogNo === null)) ||
+    ((a.packLogNo ?? 0) - (b.packLogNo ?? 0)) ||
+    collator.compare(a.packLog, b.packLog) ||
+    (rowOrder === 'file' ? 0 : collator.compare(a[rowOrder], b[rowOrder])) ||
+    a.position - b.position
+  );
+}
+
+function packLogLabel(order) {
+  if (!order.packLog) return 'No pack log';
+  return `Pack log ${order.packLogNo ?? order.packLog}`;
+}
+
+function groupOrders(orders) {
+  const channels = [];
+  let channel = null;
+  let date = null;
+  let packLog = null;
+
+  [...orders].sort(compareOrders).forEach((order) => {
+    if (!channel || channel.name !== order.channel) {
+      channel = { name: order.channel, marketplace: order.marketplace, orders: [], dates: [] };
+      channels.push(channel);
+      date = null;
+    }
+    if (!date || date.key !== order.packDate) {
+      date = { key: order.packDate, label: order.packDate ? formatDate(order.packDate) : 'No date', orders: [], packLogs: [] };
+      channel.dates.push(date);
+      packLog = null;
+    }
+    if (!packLog || packLog.key !== order.packLog) {
+      packLog = { key: order.packLog, number: order.packLogNo, label: packLogLabel(order), orders: [] };
+      date.packLogs.push(packLog);
+    }
+    channel.orders.push(order);
+    date.orders.push(order);
+    packLog.orders.push(order);
+  });
+
+  return channels;
+}
+
+function countPackLogs(channels) {
+  return channels.reduce((total, channel) => (
+    total + channel.dates.reduce((sum, date) => sum + date.packLogs.length, 0)
+  ), 0);
+}
+
+/* ==========================================================================
+   WhatsApp message
+   ========================================================================== */
+
+function formatLines(orders) {
+  const settings = state.settings;
+  const keys = MESSAGE_FIELDS.map((field) => field.key).filter((key) => settings.fields[key]);
+  if (!keys.length) keys.push('ship');
+
+  const values = orders.map((order) => {
+    const cells = keys.map((key) => order[key] || '—');
+    if (order.qty > 1) cells[cells.length - 1] += ` · qty ${order.qty}`;
+    return cells;
+  });
+
+  if (settings.aligned) {
+    const widths = keys.map((key, i) => Math.max(...values.map((cells) => cells[i].length)));
+    const numberWidth = String(orders.length).length;
+    return values.map((cells, row) => {
+      const number = settings.numberLines ? `${String(row + 1).padStart(numberWidth)}  ` : '';
+      const text = cells.map((cell, i) => (i < cells.length - 1 ? cell.padEnd(widths[i]) : cell)).join('  ');
+      return number + text;
+    });
+  }
+
+  return values.map((cells, row) => (settings.numberLines ? `${row + 1}. ` : '') + cells.join(' | '));
+}
+
+/** Builds the message, split into parts when it is longer than one WhatsApp message. */
+function buildMessage(channels) {
+  const settings = state.settings;
+  const totalOrders = channels.reduce((sum, channel) => sum + channel.orders.length, 0);
+  if (!totalOrders) return [];
+
+  const header = [];
+  if (settings.header) {
+    const date = mainDateLabel();
+    header.push(`*${(settings.title || 'Dispatch list').trim()}${date ? ` · ${date}` : ''}*`);
+    header.push(`Total: ${plural(totalOrders, 'shipment')} · ${plural(channels.length, 'channel')} · ${plural(countPackLogs(channels), 'pack log')}`);
+  }
+
+  const blocks = [];
+  channels.forEach((channel) => {
+    channel.dates.forEach((date, dateIndex) => {
+      date.packLogs.forEach((packLog, packLogIndex) => {
+        const headings = [];
+        if (dateIndex === 0 && packLogIndex === 0) headings.push(`*${channel.name}* · ${pieces(sumQty(channel.orders))}`);
+        if (packLogIndex === 0) headings.push(`Date: ${date.label} · ${pieces(sumQty(date.orders))}`);
+        headings.push(`_${packLog.label}_ · ${pieces(sumQty(packLog.orders))}`);
+
+        blocks.push({
+          headings,
+          continued: [`*${channel.name}* contd.`, `_${packLog.label}_ contd.`],
+          lines: formatLines(packLog.orders),
         });
-        lucide.createIcons();
+      });
+    });
+  });
+
+  const fence = settings.aligned ? '```' : null;
+  const parts = [];
+  let current = [];
+  let length = 0;
+
+  const push = (line) => {
+    current.push(line);
+    length += line.length + 1;
+  };
+  const flush = () => {
+    if (current.length) parts.push(current.join('\n').replace(/\n+$/, ''));
+    current = [];
+    length = 0;
+  };
+
+  header.forEach(push);
+  blocks.forEach((block) => {
+    if (current.length) push('');
+    block.headings.forEach(push);
+    if (fence) push(fence);
+
+    block.lines.forEach((line) => {
+      if (length + line.length + 8 > WHATSAPP_LIMIT) {
+        if (fence) push(fence);
+        flush();
+        block.continued.forEach(push);
+        if (fence) push(fence);
       }
-    };
-
-    function escapeHtml(str) {
-      return str.replace(/[&<>"']/g, match => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[match]));
-    }
-
-    document.addEventListener('DOMContentLoaded', () => lucide.createIcons());
-  </script>
-  <script>
-    // Disable right-click menu
-    document.addEventListener('contextmenu', (e) => e.preventDefault());
-
-    // Block common DevTools shortcuts
-    document.addEventListener('keydown', (e) => {
-      if (
-        e.key === 'F12' ||
-        (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) ||
-        (e.ctrlKey && e.key === 'U')
-      ) {
-        e.preventDefault();
-      }
+      push(line);
     });
 
-    // DevTools Pause / Freeze Loop (Anti-Debugging)
-    (function () {
-      function blockDevTools() {
-        const startTime = performance.now();
+    if (fence) push(fence);
+  });
+  flush();
 
-        (function () {
-          return false;
-        })
-        ["constructor"]("debugger")();
+  if (parts.length === 1) return parts;
+  return parts.map((part, i) => `Part ${i + 1}/${parts.length}\n${part}`);
+}
 
-        const endTime = performance.now();
+/** Tab-separated text that pastes into Excel or Google Sheets as a table. */
+function buildExcelText(channels) {
+  const lines = [['S.No', 'Marketplace', 'Channel', 'Date', 'Pack log no.', 'SKU', 'Qty', 'Shipment ID', 'Pack log']];
+  let serial = 0;
 
-        if (endTime - startTime > 100) {
-          document.body.innerHTML = `
-            <div style="height:100vh; display:flex; justify-content:center; align-items:center; background:#1e293b; color:#fff; font-family:sans-serif; text-align:center; padding:20px;">
-              <div>
-                <h1 style="font-size:2rem; font-weight:bold; color:#ef4444; margin-bottom:10px;">DevTools Detected</h1>
-                <p style="color:#94a3b8;">Access is restricted. Please close Developer Tools to resume.</p>
-              </div>
-            </div>
-          `;
+  channels.forEach((channel) => {
+    channel.dates.forEach((date) => {
+      date.packLogs.forEach((packLog) => {
+        packLog.orders.forEach((order) => {
+          serial += 1;
+          lines.push([serial, channel.marketplace, channel.name, date.key, order.packLogNo ?? '', order.sku, order.qty, order.ship, order.packLog]);
+        });
+      });
+    });
+  });
+
+  return lines.map((cells) => cells.join('\t')).join('\n');
+}
+
+/* ==========================================================================
+   Picklist (print): channel → pack log → SKU with summed qty
+   ========================================================================== */
+
+function picklistTableHtml(date, packLog) {
+  const totals = new Map();
+  packLog.orders.forEach((order) => {
+    const sku = order.sku || '(no SKU)';
+    totals.set(sku, (totals.get(sku) || 0) + order.qty);
+  });
+
+  const items = [...totals.entries()].sort((a, b) => collator.compare(a[0], b[0]));
+  const otherDay = date.key && date.key !== state.mainDate ? ` · ${date.label}` : '';
+
+  const rows = items.map(([sku, qty]) => `
+        <tr>
+          <td class="sku">${escapeHtml(sku)}</td>
+          <td class="qty${qty > 1 ? ' qty-multi' : ''}">${qty}</td>
+          <td class="done"><span></span></td>
+        </tr>`).join('');
+
+  return `
+    <table class="picklist-table">
+      <colgroup>
+        <col>
+        <col class="col-qty">
+        <col class="col-done">
+      </colgroup>
+      <thead>
+        <tr>
+          <th class="pack-log-title" colspan="3">${escapeHtml(packLog.label + otherDay)} <span>· ${pieces(sumQty(packLog.orders))}</span></th>
+        </tr>
+        <tr class="column-labels">
+          <th scope="col">SKU</th>
+          <th scope="col" class="qty">Qty</th>
+          <th scope="col" class="done">Done</th>
+        </tr>
+      </thead>
+      <tbody>${rows}
+      </tbody>
+    </table>`;
+}
+
+function buildPicklist(channels) {
+  const date = mainDateLabel();
+  const title = (state.settings.title || 'Dispatch list').trim();
+
+  const sections = channels.map((channel) => {
+    const hasSelections = channel.dates.some(day => 
+      day.packLogs.some(pl => state.selectedPackLogs.has(`${channel.name}|${pl.key}`))
+    );
+
+    const filteredLogs = channel.dates.flatMap((day) => {
+      const logs = hasSelections 
+        ? day.packLogs.filter((pLog) => state.selectedPackLogs.has(`${channel.name}|${pLog.key}`))
+        : day.packLogs;
+      return logs.map((pLog) => ({ day, pLog }));
+    });
+
+    if (filteredLogs.length === 0) return '';
+
+    const tables = filteredLogs.map(({ day, pLog }) => picklistTableHtml(day, pLog)).join('');
+    const totalPcs = filteredLogs.reduce((sum, { pLog }) => sum + sumQty(pLog.orders), 0);
+
+    return `
+    <section class="picklist-channel">
+      <h2>${escapeHtml(channel.name)} <span>· ${pieces(totalPcs)}</span></h2>
+      ${tables}
+    </section>`;
+  }).filter(Boolean).join('');
+
+  $('#picklist').innerHTML = `
+    <p class="picklist-meta">${escapeHtml(title)}${date ? ` · ${escapeHtml(date)}` : ''} · printed ${escapeHtml(formatNow())}</p>
+    ${sections || '<p>No pack logs selected.</p>'}`;
+}
+
+/* ==========================================================================
+   Rendering
+   ========================================================================== */
+
+function renderAll() {
+  renderFileInfo();
+  renderColumnMap();
+  renderMarketplaces();
+  render();
+}
+
+function renderFileInfo() {
+  const info = $('#fileInfo');
+  info.hidden = !state.fileName;
+  if (!state.fileName) return;
+
+  const time = state.loadedAt.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+  info.innerHTML = `<strong>${escapeHtml(state.fileName)}</strong> · ${state.orders.length} orders · ${time}`;
+}
+
+function renderColumnMap() {
+  const missing = COLUMNS.filter((column) => !column.optional && state.columnIndex[column.key] < 0);
+  const panel = $('#columnMap');
+  panel.hidden = !missing.length;
+  if (!missing.length) return;
+
+  showAlert(`Couldn't find the ${missing.map((column) => column.label).join(', ')} column. Choose it below.`);
+
+  const options = (selected) => [
+    `<option value="-1"${selected < 0 ? ' selected' : ''}>Not in this file</option>`,
+    ...state.headers.map((header, i) => (
+      `<option value="${i}"${i === selected ? ' selected' : ''}>${columnLetter(i)} · ${escapeHtml(header || '(blank)')}</option>`
+    )),
+  ].join('');
+
+  panel.innerHTML = COLUMNS.map((column) => `
+    <label>
+      ${column.label}
+      <select data-column="${column.key}">${options(state.columnIndex[column.key])}</select>
+    </label>`).join('');
+}
+
+function renderMarketplaces() {
+  const nav = $('#marketplaces');
+  nav.hidden = !state.orders.length;
+  if (!state.orders.length) return;
+
+  const counts = new Map();
+  state.orders.forEach((order) => counts.set(order.marketplace, (counts.get(order.marketplace) || 0) + 1));
+
+  const chip = (value, name, count) => `
+    <button type="button" class="chip" data-marketplace="${escapeHtml(value)}">
+      <span class="chip-name">${escapeHtml(name)}</span>
+      <span class="chip-count">${count}</span>
+    </button>`;
+
+  const missingCount = state.orders.filter((order) => order.isMissing).length;
+
+  nav.innerHTML = [
+    chip('all', 'All marketplaces', state.orders.length),
+    ...[...counts.keys()].sort(collator.compare).map((name) => chip(name, name, counts.get(name))),
+    missingCount ? `
+    <button type="button" class="chip chip-warn" data-missing="true">
+      <span class="chip-name">${missingCount === 1 ? '1 order' : `${missingCount} orders`} missing data</span>
+    </button>` : '',
+  ].join('');
+}
+
+function render() {
+  $('#workspace').hidden = !state.orders.length;
+  if (!state.orders.length) return;
+
+  const orders = visibleOrders();
+  state.channels = groupOrders(orders);
+
+  renderChannels(orders);
+  renderMessage(orders);
+  renderPressedChips();
+}
+
+function renderPressedChips() {
+  document.querySelectorAll('#marketplaces .chip').forEach((chip) => {
+    let pressed;
+    if (chip.dataset.missing) {
+      pressed = state.missingOnly;
+    } else if (chip.dataset.marketplace === 'all') {
+      pressed = state.showAllMarketplaces;
+    } else {
+      pressed = state.selectedMarketplaces.has(chip.dataset.marketplace);
+    }
+    chip.setAttribute('aria-pressed', String(pressed));
+  });
+}
+
+function renderChannels(orders) {
+  const isFiltered = Boolean(state.search.trim()) || state.missingOnly;
+  const forceOpen = isFiltered || state.channels.length === 1;
+
+  $('#channelList').innerHTML = state.channels
+    .map((channel, index) => channelHtml(channel, index, forceOpen))
+    .join('');
+
+  $('#emptyState').hidden = orders.length > 0;
+
+  const result = $('#searchResult');
+  result.hidden = !isFiltered;
+  if (isFiltered) {
+    result.innerHTML = `${plural(orders.length, 'order')} found · <button type="button" class="link-button" id="clearFilterButton">Show all</button>`;
+  }
+}
+
+function channelHtml(channel, channelIndex, forceOpen) {
+  const isOpen = forceOpen || state.openChannels.has(channel.name);
+  const numbers = channel.orders.filter((order) => order.packLogNo !== null).map((order) => order.packLogNo);
+
+  const printButton = IS_STANDALONE
+    ? `<button type="button" class="btn btn-small" data-action="print-channel" data-channel="${channelIndex}">Print</button>`
+    : '';
+
+  const dates = channel.dates.map((date, dateIndex) => `
+        <h3 class="date-heading">${escapeHtml(date.label)} <span>${pieces(sumQty(date.orders))}</span></h3>
+        ${date.packLogs.map((packLog, packLogIndex) => packLogHtml(channel, channelIndex, date, dateIndex, packLog, packLogIndex, forceOpen)).join('')}`).join('');
+
+  return `
+    <details class="channel" data-name="${escapeHtml(channel.name)}"${isOpen ? ' open' : ''}>
+      <summary class="channel-summary">
+        <span class="chevron" aria-hidden="true"></span>
+        <span class="channel-heading">
+          <span class="channel-name">${escapeHtml(channel.name)}</span>
+          <span class="channel-meta">
+            <span class="marketplace-tag">${escapeHtml(channel.marketplace)}</span>
+            ${numbers.length ? `<span class="pack-log-range">Pack logs ${compressRanges(numbers)}</span>` : ''}
+          </span>
+        </span>
+        <span class="channel-total"><strong>${sumQty(channel.orders)}</strong>pcs</span>
+        <span class="channel-actions">
+          <button type="button" class="btn btn-small" data-action="copy-channel" data-channel="${channelIndex}">Copy</button>
+          ${printButton}
+        </span>
+      </summary>
+      <div class="channel-body">${dates}
+      </div>
+    </details>`;
+}
+
+function packLogHtml(channel, channelIndex, date, dateIndex, packLog, packLogIndex, forceOpen) {
+  const key = `${channel.name}|${packLog.key}`;
+  const isOpen = forceOpen || !state.closedPackLogs.has(key);
+  const name = packLog.number !== null ? `Pack log <strong>${packLog.number}</strong>` : escapeHtml(packLog.label);
+
+  const rows = packLog.orders.map((order, i) => `
+              <tr${order.isMissing ? ' class="is-missing"' : ''}>
+                <td class="num">${i + 1}</td>
+                ${orderCell(order.sku, order.qty > 1 ? `<span class="badge">qty ${order.qty}</span>` : '')}
+                ${orderCell(order.ship, order.shipmentRepeats > 1 ? `<span class="badge" title="Same shipment ID on ${order.shipmentRepeats} rows">×${order.shipmentRepeats}</span>` : '')}
+              </tr>`).join('');
+
+  return `
+        <details class="pack-log" data-key="${escapeHtml(key)}"${isOpen ? ' open' : ''}>
+          <summary class="pack-log-summary">
+            <span class="chevron" aria-hidden="true"></span>
+            <input type="checkbox" class="pack-log-select" data-key="${escapeHtml(key)}" title="Select for printing" ${state.selectedPackLogs.has(key) ? 'checked' : ''} style="width: 16px; height: 16px; margin: 0 6px; accent-color: var(--accent);">
+            <span class="pack-log-name">${name}</span>
+            <span class="pack-log-count">${pieces(sumQty(packLog.orders))}</span>
+            <button type="button" class="btn-mini" data-action="copy-pack-log"
+                    data-channel="${channelIndex}" data-date="${dateIndex}" data-pack-log="${packLogIndex}">Copy</button>
+          </summary>
+          <div class="table-wrap">
+            <table class="orders">
+              <thead>
+                <tr>
+                  <th scope="col">#</th>
+                  <th scope="col">SKU</th>
+                  <th scope="col">Shipment ID</th>
+                </tr>
+              </thead>
+              <tbody>${rows}
+              </tbody>
+            </table>
+          </div>
+        </details>`;
+}
+
+function orderCell(value, badge) {
+  if (!value) return '<td class="mono"><span class="missing-label">Missing</span></td>';
+  return `<td class="mono" data-copy="${escapeHtml(value)}" title="Click to copy">${escapeHtml(value)}${badge}</td>`;
+}
+
+function renderMessage(orders) {
+  const settings = state.settings;
+  const parts = buildMessage(state.channels);
+  state.messageParts = parts;
+
+  const scope = state.showAllMarketplaces ? 'All marketplaces' : Array.from(state.selectedMarketplaces).join(', ');
+  $('#messageScope').textContent = `${scope} · ${pieces(sumQty(orders))}`;
+  $('#messagePreview').value = parts.length > 1
+    ? parts.join('\n\n──────── next message ────────\n\n')
+    : (parts[0] || '');
+
+  $('#copyButtons').innerHTML = parts.length > 1
+    ? parts.map((part, i) => `<button type="button" class="btn btn-primary" data-part="${i}">Copy part ${i + 1} of ${parts.length}</button>`).join('')
+    : `<button type="button" class="btn btn-primary" data-part="0"${parts.length ? '' : ' disabled'}>Copy message</button>`;
+
+  $('#copyExcelButton').disabled = !orders.length;
+  $('#printButton').disabled = !orders.length;
+
+  $('#fieldChips').innerHTML = MESSAGE_FIELDS.map((field) => `
+    <button type="button" class="field-chip" data-field="${field.key}" aria-pressed="${Boolean(settings.fields[field.key])}">${field.label}</button>`).join('');
+}
+
+function applySettingsToControls() {
+  const settings = state.settings;
+  $('#titleInput').value = settings.title;
+  $('#rowOrderSelect').value = settings.rowOrder;
+  $('#numberLinesOption').checked = settings.numberLines;
+  $('#headerOption').checked = settings.header;
+  $('#alignedOption').checked = settings.aligned;
+}
+
+/* ==========================================================================
+   Clipboard, alerts and toast
+   ========================================================================== */
+
+let toastTimer;
+
+function showToast(message) {
+  const toast = $('#toast');
+  toast.textContent = message;
+  toast.classList.add('is-visible');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('is-visible'), 2800);
+}
+
+function showAlert(message) {
+  const alert = $('#alert');
+  alert.textContent = message;
+  alert.hidden = false;
+}
+
+function hideAlert() {
+  $('#alert').hidden = true;
+}
+
+async function copyText(text, successMessage, selectPreviewOnFailure = false) {
+  if (!text) {
+    showToast('Nothing to copy');
+    return;
+  }
+
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast(successMessage);
+    return;
+  } catch (error) {
+    // Fall back to a hidden textarea below.
+  }
+
+  const helper = document.createElement('textarea');
+  helper.value = text;
+  helper.setAttribute('readonly', '');
+  helper.style.cssText = 'position:fixed;top:0;left:0;opacity:0';
+  document.body.appendChild(helper);
+  helper.select();
+
+  let copied = false;
+  try {
+    copied = document.execCommand('copy');
+  } catch (error) {
+    copied = false;
+  }
+  helper.remove();
+
+  if (copied) {
+    showToast(successMessage);
+  } else if (selectPreviewOnFailure) {
+    const preview = $('#messagePreview');
+    preview.focus();
+    preview.select();
+    showToast('Copy is blocked here. The message is selected: press Ctrl+C.');
+  } else {
+    showToast('Copy is blocked here. Select the text and copy it by hand.');
+  }
+}
+
+function copyChannels(channels, label) {
+  const parts = buildMessage(channels);
+  if (parts.length > 1) {
+    showToast(`${label} is too long for one message. Copy it in parts from the message panel.`);
+    return;
+  }
+  copyText(parts[0], `${label} copied`);
+}
+
+/* ==========================================================================
+   Events
+   ========================================================================== */
+
+// File upload: picker and drag-and-drop anywhere on the page
+const upload = $('#upload');
+
+$('#fileInput').addEventListener('change', (event) => {
+  const file = event.target.files[0];
+  if (file) loadFile(file);
+  event.target.value = '';
+});
+
+['dragenter', 'dragover'].forEach((type) => {
+  document.addEventListener(type, (event) => {
+    event.preventDefault();
+    upload.classList.add('is-dragging');
+  });
+});
+
+document.addEventListener('dragleave', (event) => {
+  if (!event.relatedTarget) upload.classList.remove('is-dragging');
+});
+
+document.addEventListener('drop', (event) => {
+  event.preventDefault();
+  upload.classList.remove('is-dragging');
+  const file = event.dataTransfer && event.dataTransfer.files[0];
+  if (file) loadFile(file);
+});
+
+// Column picker (only shown when a column can't be found)
+$('#columnMap').addEventListener('change', (event) => {
+  const select = event.target.closest('select[data-column]');
+  if (!select) return;
+  state.columnIndex[select.dataset.column] = Number(select.value);
+  hideAlert();
+  buildOrders();
+  renderAll();
+});
+
+// Marketplace selector and missing-data filter
+$('#marketplaces').addEventListener('click', (event) => {
+  const chip = event.target.closest('.chip');
+  if (!chip) return;
+
+  if (chip.dataset.missing) {
+    state.missingOnly = !state.missingOnly;
+  } else {
+    const mp = chip.dataset.marketplace;
+    if (mp === 'all') {
+      state.showAllMarketplaces = true;
+      state.selectedMarketplaces.clear();
+    } else {
+      state.showAllMarketplaces = false;
+      if (state.selectedMarketplaces.has(mp)) {
+        state.selectedMarketplaces.delete(mp);
+        if (state.selectedMarketplaces.size === 0) {
+          state.showAllMarketplaces = true;
         }
+      } else {
+        state.selectedMarketplaces.add(mp);
       }
+    }
+    state.missingOnly = false;
+  }
+  render();
+});
 
-      setInterval(blockDevTools, 100);
-    })();
-  </script>
+
+// Toolbar
+$('#searchInput').addEventListener('input', (event) => {
+  state.search = event.target.value;
+  render();
+});
+
+$('#rowOrderSelect').addEventListener('change', (event) => {
+  state.settings.rowOrder = event.target.value;
+  saveSettings();
+  render();
+});
+
+$('#expandAllButton').addEventListener('click', () => {
+  state.openChannels = new Set(state.channels.map((channel) => channel.name));
+  state.closedPackLogs = new Set();
+  render();
+});
+
+$('#collapseAllButton').addEventListener('click', () => {
+  state.openChannels = new Set();
+  render();
+});
+
+$('#searchResult').addEventListener('click', (event) => {
+  if (event.target.id !== 'clearFilterButton') return;
+  state.search = '';
+  state.missingOnly = false;
+  $('#searchInput').value = '';
+  render();
+});
+
+// Remember which channels and pack logs are open between renders
+const channelList = $('#channelList');
+
+channelList.addEventListener('toggle', (event) => {
+  const section = event.target;
+  if (section.classList.contains('channel')) {
+    if (section.open) state.openChannels.add(section.dataset.name);
+    else state.openChannels.delete(section.dataset.name);
+  } else if (section.classList.contains('pack-log')) {
+    if (section.open) state.closedPackLogs.delete(section.dataset.key);
+    else state.closedPackLogs.add(section.dataset.key);
+  }
+}, true);
+
+
+channelList.addEventListener('click', (event) => {
+  if (event.target.classList.contains('pack-log-select')) {
+    event.stopPropagation();
+    return;
+  }
+
+  const button = event.target.closest('[data-action]');
+
+  if (button) {
+    event.preventDefault();
+    const channel = state.channels[Number(button.dataset.channel)];
+    if (!channel) return;
+
+    if (button.dataset.action === 'copy-channel') {
+      copyChannels([channel], channel.name);
+    }
+
+    if (button.dataset.action === 'copy-pack-log') {
+      const date = channel.dates[Number(button.dataset.date)];
+      const packLog = date.packLogs[Number(button.dataset.packLog)];
+      const single = { ...channel, orders: packLog.orders, dates: [{ ...date, orders: packLog.orders, packLogs: [packLog] }] };
+      copyChannels([single], packLog.label);
+    }
+
+    if (button.dataset.action === 'print-channel') {
+      state.printChannelIndex = Number(button.dataset.channel);
+      window.print();
+    }
+    return;
+  }
+
+  const cell = event.target.closest('[data-copy]');
+  if (cell) copyText(cell.dataset.copy, `Copied ${cell.dataset.copy}`);
+});
+
+channelList.addEventListener('change', (event) => {
+  if (event.target.classList.contains('pack-log-select')) {
+    const key = event.target.dataset.key;
+    if (event.target.checked) {
+      state.selectedPackLogs.add(key);
+    } else {
+      state.selectedPackLogs.delete(key);
+    }
+  }
+});
+
+
+// Message options
+$('#titleInput').addEventListener('input', (event) => {
+  state.settings.title = event.target.value;
+  saveSettings();
+  render();
+});
+
+[
+  ['#numberLinesOption', 'numberLines'],
+  ['#headerOption', 'header'],
+  ['#alignedOption', 'aligned'],
+].forEach(([selector, key]) => {
+  $(selector).addEventListener('change', (event) => {
+    state.settings[key] = event.target.checked;
+    saveSettings();
+    render();
+  });
+});
+
+$('#fieldChips').addEventListener('click', (event) => {
+  const chip = event.target.closest('[data-field]');
+  if (!chip) return;
+
+  const fields = state.settings.fields;
+  const key = chip.dataset.field;
+  const activeCount = MESSAGE_FIELDS.filter((field) => fields[field.key]).length;
+
+  if (fields[key] && activeCount <= 1) {
+    showToast('Keep at least one field in the message');
+    return;
+  }
+  fields[key] = !fields[key];
+  saveSettings();
+  render();
+});
+
+// Copy buttons in the message panel
+$('#copyButtons').addEventListener('click', (event) => {
+  const button = event.target.closest('[data-part]');
+  if (!button) return;
+
+  const index = Number(button.dataset.part);
+  const total = state.messageParts.length;
+  const message = total > 1 ? `Part ${index + 1} of ${total} copied` : 'Message copied';
+  copyText(state.messageParts[index], message, total === 1);
+});
+
+$('#copyExcelButton').addEventListener('click', () => {
+  copyText(buildExcelText(state.channels), 'Table copied for Excel');
+});
+
+// Printing: the page viewer blocks the print dialog, so the button only appears in the offline copy
+if (IS_STANDALONE) {
+  $('#printButton').hidden = false;
+  $('#printButton').addEventListener('click', () => {
+    state.printChannelIndex = null;
+    window.print();
+  });
+} else {
+  $('#printNote').hidden = false;
+}
+
+window.addEventListener('beforeprint', () => {
+  const single = state.channels[state.printChannelIndex];
+  buildPicklist(single ? [single] : state.channels);
+});
+
+window.addEventListener('afterprint', () => {
+  state.printChannelIndex = null;
+});
+
+/* ==========================================================================
+   Start
+   ========================================================================== */
+
+applySettingsToControls();
+</script>
+
 </body>
-</html>
+  </html>
